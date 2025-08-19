@@ -4,13 +4,12 @@ A full-stack web platform for customizing, sharing, and purchasing modular aerop
 
 ## 🔧 Stack
 - **Frontend**: React + Vite + Tailwind CSS
-- **Backend**: Node.js + Express + MongoDB
-- **Auth**: Firebase Auth (or custom JWT-based)
+- **Backend**: Node.js + Express + PostgreSQL (via Prisma ORM)
+- **Auth**: Supabase Auth
 - **Hosting**:
   - Frontend: Vercel or Netlify
   - Backend: Render or Railway
-  - Database: MongoDB Atlas
-  - Storage: Firebase Storage or AWS S3
+  - Database: Supabase
 
 ## 📁 Project Structure
 ```
@@ -45,6 +44,7 @@ npm run dev
 ```
 cd server
 npm install
+npx prisma migrate dev
 npm run dev
 ```
 
