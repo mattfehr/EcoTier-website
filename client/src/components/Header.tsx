@@ -1,6 +1,7 @@
 // src/components/Header.tsx
 import { Link, NavLink } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
+import betterlogo from "../assets/betterlogo.png"; 
 
 export default function Header() {
   // Helper for active link styling
@@ -14,7 +15,7 @@ export default function Header() {
       {/* Left side: Logo + Nav */}
       <div className="flex items-center space-x-6">
         <Link to="/" className="flex items-center space-x-2">
-          <img src="/logo.svg" alt="EcoTier Solutions" className="h-8 w-8" />
+          <img src={betterlogo} alt="EcoTier Solutions" className="h-8 w-8" />
           <span className="font-bold text-lg">EcoTier Solutions</span>
         </Link>
 
