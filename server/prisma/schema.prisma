@@ -6,10 +6,148 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  userID     String   @id @default(uuid())
+  username   String   @unique
+  email      String   @unique
+  password   String
+  createTime DateTime @default(now())
+
+  products      Product[]
+  cartItems     CartItem[]
+  favorites     Favorite[]
+  orders        Order[]
+  comments      Comment[]
+  questions     Question[]
+  following     Follow[] @relation("Following")
+  followers     Follow[] @relation("Follower")
+}
+
+model Product {
+  productID    String   @id @default(uuid())
+  productType  ProductType
+  creatorID    String?
+  name         String
+  price        Float
+  description  String?
+  is_public    Boolean  @default(true)
+  createTime   DateTime @default(now())
+  updateTime   DateTime @updatedAt
+  sensorPin    String?  // only for addons
+
+  creator      User?    @relation(fields: [creatorID], references: [userID])
+  cartItems    CartItem[]
+  favorites    Favorite[]
+  comments     Comment[]
+  towerParts   TowerComponent[] @relation("Component") // as part
+  towerOwned   TowerComponent[] @relation("Tower")     // as tower
+  orderItems   OrderItem[]
+}
+
+model TowerComponent {
+  towerID   String
+  partID    String
+  position  Int?
+  quantity  Int @default(1)
+
+  tower     Product @relation("Tower", fields: [towerID], references: [productID], onDelete: Cascade)
+  part      Product @relation("Component", fields: [partID], references: [productID], onDelete: Cascade)
+
+  @@id([towerID, partID])
+}
+
+model CartItem {
+  userID    String
+  productID String
+  quantity  Int @default(1)
+
+  user      User    @relation(fields: [userID], references: [userID], onDelete: Cascade)
+  product   Product @relation(fields: [productID], references: [productID], onDelete: Cascade)
+
+  @@id([userID, productID])
+}
+
+model Favorite {
+  userID    String
+  productID String
+
+  user      User    @relation(fields: [userID], references: [userID], onDelete: Cascade)
+  product   Product @relation(fields: [productID], references: [productID], onDelete: Cascade)
+
+  @@id([userID, productID])
+}
+
+model Order {
+  orderNumber    String   @id @default(uuid())
+  customerID     String
+  address        String
+  totalPrice     Float
+  purchaseTime   DateTime @default(now())
+
+  customer       User      @relation(fields: [customerID], references: [userID], onDelete: Cascade)
+  orderItems     OrderItem[]
+}
+
+model OrderItem {
+  orderNumber     String
+  productID       String
+  quantity        Int
+  priceAtPurchase Float
+
+  order           Order   @relation(fields: [orderNumber], references: [orderNumber], onDelete: Cascade)
+  product         Product @relation(fields: [productID], references: [productID], onDelete: Cascade)
+
+  @@id([orderNumber, productID])
+}
+
+model Comment {
+  userID     String
+  productID  String
+  content    String
+  postTime   DateTime @default(now())
+
+  user       User    @relation(fields: [userID], references: [userID], onDelete: Cascade)
+  product    Product @relation(fields: [productID], references: [productID], onDelete: Cascade)
+
+  @@id([userID, productID])
+}
+
+model Follow {
+  followerID  String
+  followingID String
+  createdAt   DateTime @default(now())
+
+  follower    User @relation("Follower", fields: [followerID], references: [userID], onDelete: Cascade)
+  following   User @relation("Following", fields: [followingID], references: [userID], onDelete: Cascade)
+
+  @@id([followerID, followingID])
+}
+
+model Question {
+  questionID   String   @id @default(uuid())
+  userID       String
+  questionType QuestionType
+  content      String
+  response     String?
+  createdAt    DateTime @default(now())
+
+  user         User @relation(fields: [userID], references: [userID], onDelete: Cascade)
+}
+
+enum ProductType {
+  tower
+  module
+  addon
+}
+
+enum QuestionType {
+  question
+  feedback
 }
