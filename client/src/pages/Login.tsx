@@ -9,7 +9,7 @@ export default function AuthForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate(); // 👈 for redirecting
+  const navigate = useNavigate(); 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
