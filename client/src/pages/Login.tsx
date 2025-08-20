@@ -1,59 +1,55 @@
 // src/pages/Login.tsx
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
-export default function Login() {
+export default function AuthForm() {
+  const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate(); // 👈 for redirecting
 
-  async function handleLogin(e: React.FormEvent) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      setError(error.message);
-    } else {
-      // TODO: Redirect or update auth context
-      console.log("Logged in!");
-    }
-
-    setLoading(false);
-  }
-
-  async function handleSignup(e: React.FormEvent) {
-    e.preventDefault();
     setLoading(true);
-    setError(null);
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    try {
+      if (isRegistering) {
+        // 🆕 Sign up
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        console.log("✅ Signed up");
+      } else {
+        // 🔑 Log in
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        console.log("✅ Logged in");
+      }
 
-    if (error) {
-      setError(error.message);
-    } else {
-      console.log("Check your email to confirm account!");
+      // ✅ Redirect to home after success
+      navigate("/");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
-  }
+  };
 
   return (
     <div className="flex justify-center items-center min-h-[70vh]">
       <form
-        onSubmit={handleLogin}
+        onSubmit={handleSubmit}
         className="w-full max-w-sm bg-white shadow-md rounded-lg p-6 space-y-4"
       >
-        <h1 className="text-xl font-bold text-center">Log In</h1>
+        <h1 className="text-xl font-bold text-center">
+          {isRegistering ? "Sign Up" : "Log In"}
+        </h1>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
@@ -63,6 +59,7 @@ export default function Login() {
           className="w-full p-2 border rounded-md"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
         />
 
         <input
@@ -71,23 +68,35 @@ export default function Login() {
           className="w-full p-2 border rounded-md"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700"
+          className={`w-full ${
+            isRegistering
+              ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
+              : "bg-green-600 text-white hover:bg-green-700"
+          } py-2 rounded-md`}
         >
-          {loading ? "Logging in..." : "Log In"}
+          {loading
+            ? isRegistering
+              ? "Signing up..."
+              : "Logging in..."
+            : isRegistering
+            ? "Sign Up"
+            : "Log In"}
         </button>
 
         <button
           type="button"
-          disabled={loading}
-          onClick={handleSignup}
-          className="w-full bg-gray-200 text-gray-800 py-2 rounded-md hover:bg-gray-300"
+          onClick={() => setIsRegistering((prev) => !prev)}
+          className="w-full text-sm text-blue-600 hover:underline"
         >
-          Sign Up
+          {isRegistering
+            ? "Already have an account? Log In"
+            : "Need an account? Sign Up"}
         </button>
       </form>
     </div>
