@@ -18,21 +18,23 @@ export default function AuthForm() {
 
     try {
       if (isRegistering) {
-        // 🆕 Sign up
+        // Sign up
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         console.log("✅ Signed up");
+        alert("Account created! You are now logged in.");
       } else {
-        // 🔑 Log in
+        // Log in
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
         console.log("✅ Logged in");
+        alert("Logged in!");
       }
 
-      // ✅ Redirect to home after success
+      // Redirect to home after success
       navigate("/");
     } catch (err: any) {
       setError(err.message);
@@ -102,3 +104,6 @@ export default function AuthForm() {
     </div>
   );
 }
+
+
+//TODO: make log in button change to logout and make it so you can use usernames, and the auth needs to match with the database

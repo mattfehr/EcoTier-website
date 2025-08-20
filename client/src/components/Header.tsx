@@ -19,8 +19,8 @@ export default function Header() {
           <span className="font-bold text-lg">EcoTier Solutions</span>
         </Link>
 
-        <NavLink to="/about" className={navLinkClass}>
-          About
+        <NavLink to="/home" className={navLinkClass}>
+          Home
         </NavLink>
 
         <NavLink to="/shop" className={navLinkClass}>
