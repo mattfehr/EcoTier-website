@@ -8,10 +8,11 @@ datasource db {
 }
 
 model users {
-  id         String   @id @default(dbgenerated()) @db.Uuid // match auth.users.id
-  username   String   @unique
-  email      String   @unique
-  createTime DateTime @default(now())
+  id           String   @id @default(dbgenerated()) @db.Uuid // match auth.users.id
+  username     String   @unique
+  email        String   @unique
+  createTime   DateTime @default(now())
+  profileImage String? //URL path to supabase storage bucket
 
   follows   follows[]   @relation("Follower")
   following follows[]   @relation("Following")
@@ -110,6 +111,7 @@ model products {
   updateTime  DateTime @updatedAt
   description String?
   PIN         String?
+  imageURL    String?
 
   creator    users       @relation("CreatorProducts", fields: [creatorID], references: [id])
   orderItems orderitem[]
