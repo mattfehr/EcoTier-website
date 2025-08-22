@@ -4,158 +4,131 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL") // From Supabase settings
 }
 
-model User {
-  userID     String   @id @default(uuid()) @map("user_id")
+model users {
+  id         String   @id @default(dbgenerated()) @db.Uuid // match auth.users.id
   username   String   @unique
   email      String   @unique
-  password   String
-  createTime DateTime @default(now()) @map("create_time")
+  createTime DateTime @default(now())
 
-  products      Product[]
-  cartItems     CartItem[]
-  favorites     Favorite[]
-  orders        Order[]
-  comments      Comment[]
-  questions     Question[]
-  following     Follow[] @relation("Following")
-  followers     Follow[] @relation("Follower")
-
-  @@map("users")
+  follows   follows[]   @relation("Follower")
+  following follows[]   @relation("Following")
+  questions questions[]
+  cartItems cartitem[]
+  favorites favorites[]
+  orders    orders[]    @relation("CustomerOrders")
+  comments  comments[]
+  products  products[]  @relation("CreatorProducts")
 }
 
-model Product {
-  productID    String   @id @default(uuid()) @map("product_id")
-  productType  ProductType @map("product_type")
-  creatorID    String?  @map("creator_id")
-  name         String
-  price        Float
-  description  String?
-  isPublic     Boolean  @default(true) @map("is_public")
-  createTime   DateTime @default(now()) @map("create_time")
-  updateTime   DateTime @updatedAt @map("update_time")
-  sensorPin    String?  @map("sensor_pin")
+model follows {
+  followerID  String @db.Uuid
+  followingID String @db.Uuid
 
-  creator      User?    @relation(fields: [creatorID], references: [userID])
-  cartItems    CartItem[]
-  favorites    Favorite[]
-  comments     Comment[]
-  towerParts   TowerComponent[] @relation("Component")
-  towerOwned   TowerComponent[] @relation("Tower")
-  orderItems   OrderItem[]
-
-  @@map("products")
-}
-
-model TowerComponent {
-  towerID   String @map("tower_id")
-  partID    String @map("part_id")
-  position  Int?
-  quantity  Int @default(1)
-
-  tower     Product @relation("Tower", fields: [towerID], references: [productID], onDelete: Cascade)
-  part      Product @relation("Component", fields: [partID], references: [productID], onDelete: Cascade)
-
-  @@id([towerID, partID])
-  @@map("tower_components")
-}
-
-model CartItem {
-  userID    String @map("user_id")
-  productID String @map("product_id")
-  quantity  Int @default(1)
-
-  user      User    @relation(fields: [userID], references: [userID], onDelete: Cascade)
-  product   Product @relation(fields: [productID], references: [productID], onDelete: Cascade)
-
-  @@id([userID, productID])
-  @@map("cart_items")
-}
-
-model Favorite {
-  userID    String @map("user_id")
-  productID String @map("product_id")
-
-  user      User    @relation(fields: [userID], references: [userID], onDelete: Cascade)
-  product   Product @relation(fields: [productID], references: [productID], onDelete: Cascade)
-
-  @@id([userID, productID])
-  @@map("favorites")
-}
-
-model Order {
-  orderNumber    String   @id @default(uuid()) @map("order_number")
-  customerID     String   @map("customer_id")
-  address        String
-  totalPrice     Float    @map("total_price")
-  purchaseTime   DateTime @default(now()) @map("purchase_time")
-
-  customer       User      @relation(fields: [customerID], references: [userID], onDelete: Cascade)
-  orderItems     OrderItem[]
-
-  @@map("orders")
-}
-
-model OrderItem {
-  orderNumber     String @map("order_number")
-  productID       String @map("product_id")
-  quantity        Int
-  priceAtPurchase Float @map("price_at_purchase")
-
-  order           Order   @relation(fields: [orderNumber], references: [orderNumber], onDelete: Cascade)
-  product         Product @relation(fields: [productID], references: [productID], onDelete: Cascade)
-
-  @@id([orderNumber, productID])
-  @@map("order_items")
-}
-
-model Comment {
-  userID     String @map("user_id")
-  productID  String @map("product_id")
-  content    String
-  postTime   DateTime @default(now()) @map("post_time")
-
-  user       User    @relation(fields: [userID], references: [userID], onDelete: Cascade)
-  product    Product @relation(fields: [productID], references: [productID], onDelete: Cascade)
-
-  @@id([userID, productID])
-  @@map("comments")
-}
-
-model Follow {
-  followerID  String @map("follower_id")
-  followingID String @map("following_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  follower    User @relation("Follower", fields: [followerID], references: [userID], onDelete: Cascade)
-  following   User @relation("Following", fields: [followingID], references: [userID], onDelete: Cascade)
+  follower  users @relation("Follower", fields: [followerID], references: [id])
+  following users @relation("Following", fields: [followingID], references: [id])
 
   @@id([followerID, followingID])
-  @@map("follows")
 }
 
-model Question {
-  questionID   String   @id @default(uuid()) @map("question_id")
-  userID       String   @map("user_id")
-  questionType QuestionType @map("question_type")
+model questions {
+  questionID   Int     @id @default(autoincrement())
+  userID       String  @db.Uuid
+  questionType String // enum-like usage
   content      String
   response     String?
-  createdAt    DateTime @default(now()) @map("created_at")
 
-  user         User @relation(fields: [userID], references: [userID], onDelete: Cascade)
-
-  @@map("questions")
+  user users @relation(fields: [userID], references: [id])
 }
 
-enum ProductType {
-  tower
-  module
-  addon
+model cartitem {
+  userID    String @db.Uuid
+  productID Int
+  quantity  Int
+
+  user    users    @relation(fields: [userID], references: [id])
+  product products @relation(fields: [productID], references: [productID])
+
+  @@id([userID, productID])
 }
 
-enum QuestionType {
-  question
-  feedback
+model favorites {
+  userID    String @db.Uuid
+  productID Int
+
+  user    users    @relation(fields: [userID], references: [id])
+  product products @relation(fields: [productID], references: [productID])
+
+  @@id([userID, productID])
+}
+
+model orders {
+  orderNumber  Int      @id @default(autoincrement())
+  customerID   String   @db.Uuid
+  address      String
+  totalPrice   Float
+  purchaseTime DateTime @default(now())
+
+  customer   users       @relation("CustomerOrders", fields: [customerID], references: [id])
+  orderItems orderitem[]
+}
+
+model orderitem {
+  orderNumber     Int
+  productID       Int
+  quantity        Int
+  priceAtPurchase Int
+
+  order   orders   @relation(fields: [orderNumber], references: [orderNumber])
+  product products @relation(fields: [productID], references: [productID])
+
+  @@id([orderNumber, productID])
+}
+
+model comments {
+  userID    String   @db.Uuid
+  productID Int
+  content   String
+  postTime  DateTime @default(now())
+
+  user    users    @relation(fields: [userID], references: [id])
+  product products @relation(fields: [productID], references: [productID])
+
+  @@id([userID, productID])
+}
+
+model products {
+  productID   Int      @id @default(autoincrement())
+  productType String
+  name        String   @unique
+  creatorID   String   @db.Uuid
+  price       Float
+  public      Boolean
+  createTime  DateTime @default(now())
+  updateTime  DateTime @updatedAt
+  description String?
+  PIN         String?
+
+  creator    users       @relation("CreatorProducts", fields: [creatorID], references: [id])
+  orderItems orderitem[]
+  cartItems  cartitem[]
+  favorites  favorites[]
+  comments   comments[]
+
+  towersAsPart  towercomponents[] @relation("Part")
+  towersAsTower towercomponents[] @relation("Tower")
+}
+
+model towercomponents {
+  towerID  Int
+  partID   Int
+  position Int
+  quantity Int
+
+  tower products @relation("Tower", fields: [towerID], references: [productID])
+  part  products @relation("Part", fields: [partID], references: [productID])
+
+  @@id([towerID, partID])
 }

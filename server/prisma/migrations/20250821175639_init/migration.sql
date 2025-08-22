@@ -6,10 +6,9 @@ CREATE TYPE "public"."QuestionType" AS ENUM ('question', 'feedback');
 
 -- CreateTable
 CREATE TABLE "public"."users" (
-    "user_id" TEXT NOT NULL,
+    "user_id" UUID NOT NULL,
     "username" TEXT NOT NULL,
     "email" TEXT NOT NULL,
-    "password" TEXT NOT NULL,
     "create_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("user_id")
