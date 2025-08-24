@@ -1,7 +1,8 @@
-// client/src/pages/UserPage.tsx
-import { useParams, Link } from "react-router-dom";
-import type { Product } from "../../../shared/types/product";
+import { useParams } from "react-router-dom";
+import { useState, useMemo } from "react";
+import type { Product, ProductType } from "../../../shared/types/product";
 import ProductCard from "../components/ProductCard";
+import ShopFilter from "../components/ShopFilter";
 
 // Mock data — later fetch from backend
 const mockUsers = [
@@ -59,15 +60,27 @@ const mockProducts: Product[] = [
   },
 ];
 
+type Mode = "all" | ProductType;
+
 export default function UserPage() {
   const { id } = useParams<{ id: string }>();
   const user = mockUsers.find((u) => u.id === id);
+
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [mode, setMode] = useState<Mode>("all");
 
   if (!user) {
     return <div className="p-6">User not found.</div>;
   }
 
+  // Products belonging to this user
   const userProducts = mockProducts.filter((p) => p.creator.id === user.id);
+
+  // Apply filter
+  const filteredProducts = useMemo(() => {
+    if (mode === "all") return userProducts;
+    return userProducts.filter((p) => p.productType === mode);
+  }, [mode, userProducts]);
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -86,24 +99,41 @@ export default function UserPage() {
             <p className="text-gray-600 dark:text-gray-400">{user.bio}</p>
           </div>
         </div>
-        <button className="px-4 py-2 rounded-xl bg-blue-500 text-white hover:bg-blue-600">
-          Follow +
+
+        <button
+          onClick={() => setIsFollowing(!isFollowing)}
+          className={`px-4 py-2 rounded-xl text-white transition ${
+            isFollowing
+              ? "bg-red-500 hover:bg-red-600"
+              : "bg-blue-500 hover:bg-blue-600"
+          }`}
+        >
+          {isFollowing ? "Unfollow" : "Follow +"}
         </button>
       </div>
 
-      {/* Creations */}
-      <section>
+      {/* Divider with section title */}
+      <div className="border-t pt-6">
         <h2 className="text-xl font-semibold mb-4">Creations</h2>
-        {userProducts.length === 0 ? (
-          <p className="text-gray-600 dark:text-gray-400">No public creations yet.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {userProducts.map((p) => (
-              <ProductCard key={p.id} {...p} />
-            ))}
-          </div>
-        )}
-      </section>
+
+        {/* Filter */}
+        <ShopFilter mode={mode} onChange={setMode} />
+
+        {/* Grid */}
+        <div className="mt-4">
+          {filteredProducts.length === 0 ? (
+            <p className="text-gray-600 dark:text-gray-400">
+              No public creations match this filter.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {filteredProducts.map((p) => (
+                <ProductCard key={p.id} {...p} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
