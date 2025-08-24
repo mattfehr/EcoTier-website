@@ -13,6 +13,7 @@ model users {
   email        String   @unique
   createTime   DateTime @default(now())
   profileImage String? //URL path to supabase storage bucket
+  bio          String?
 
   follows   follows[]   @relation("Follower")
   following follows[]   @relation("Following")
@@ -102,7 +103,7 @@ model comments {
 
 model products {
   productID   Int      @id @default(autoincrement())
-  productType String
+  productType String //also enum like usage
   name        String   @unique
   creatorID   String   @db.Uuid
   price       Float
