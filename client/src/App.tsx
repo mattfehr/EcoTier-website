@@ -11,6 +11,7 @@ import Cart from "./pages/Cart";
 import Login from "./pages/Login";
 import FAQ from "./pages/FAQ";
 import ProductPage from "./pages/ProductPage";
+import UserPage from "./pages/UserPage";
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
 
           {/* Dynamic product route */}
           <Route path="product/:id" element={<ProductPage />} />
+          <Route path="user/:id" element={<UserPage />} />
 
           {/* Catch-all for unknown routes */}
           <Route path="*" element={<Navigate to="/" replace />} />
