@@ -1,4 +1,6 @@
-export default function Cart() {
+// import QuestionAndAnswer from "../components/QuestionAndAnswer";
+
+export default function FAQ() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold">FAQ</h1>

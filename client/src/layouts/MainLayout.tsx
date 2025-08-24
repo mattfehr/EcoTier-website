@@ -1,6 +1,7 @@
 // src/layouts/MainLayout.tsx
 import { Outlet } from "react-router-dom";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 export default function MainLayout() {
   return (
@@ -14,9 +15,7 @@ export default function MainLayout() {
       </main>
 
       {/* (Optional) Footer */}
-      <footer className="border-t border-gray-200 p-4 text-center text-sm text-gray-500">
-        © {new Date().getFullYear()} EcoTier Solutions. All rights reserved.
-      </footer>
+      <Footer />
     </div>
   );
 }
