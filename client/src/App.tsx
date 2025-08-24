@@ -1,5 +1,4 @@
-// src/App.tsx
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 
 // Import page components
@@ -19,17 +18,20 @@ function App() {
       <Routes>
         <Route element={<MainLayout />}>
           {/* Main pages */}
-          <Route path="/" element={<Home />} />
-          <Route path="/shop" element={<Shop />} />
-          <Route path="/library" element={<Library />} />
-          <Route path="/favorites" element={<Favorites />} />
-          <Route path="/following" element={<Following />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/faq" element={<FAQ />} />
+          <Route index element={<Home />} /> {/* same as path="/" */}
+          <Route path="shop" element={<Shop />} />
+          <Route path="library" element={<Library />} />
+          <Route path="favorites" element={<Favorites />} />
+          <Route path="following" element={<Following />} />
+          <Route path="cart" element={<Cart />} />
+          <Route path="login" element={<Login />} />
+          <Route path="faq" element={<FAQ />} />
 
           {/* Dynamic product route */}
-          <Route path="/product/:id" element={<ProductPage />} />
+          <Route path="product/:id" element={<ProductPage />} />
+
+          {/* Catch-all for unknown routes */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
     </BrowserRouter>

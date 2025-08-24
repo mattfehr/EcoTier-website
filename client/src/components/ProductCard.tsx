@@ -19,17 +19,21 @@ export default function ProductCard({
   return (
     <div className="rounded-2xl shadow-md bg-white dark:bg-gray-800 overflow-hidden hover:shadow-lg transition">
       {/* Product Image */}
-      <img
-        src={imageUrl}
-        alt={name}
-        className="w-full h-48 object-cover"
-      />
+      <Link to={`/product/${id}`}>
+        <img
+          src={imageUrl}
+          alt={name}
+          className="w-full h-48 object-cover hover:opacity-90 transition"
+        />
+      </Link>
 
       {/* Content */}
       <div className="p-4 flex flex-col gap-3">
         {/* Product Name */}
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          {name}
+          <Link to={`/product/${id}`} className="hover:underline">
+            {name}
+          </Link>
         </h3>
 
         {/* Creator Info (clickable avatar + name) */}
