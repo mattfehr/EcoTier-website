@@ -1,25 +1,17 @@
 import { useState } from "react";
 import { Heart, ShoppingCart, Minus, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
+import type { Product } from "../../../shared/types/product"; // shared types
 
-interface ProductCardProps {
-  id: number;
-  name: string;
-  price: number;
-  creator: {
-    id: string;
-    name: string;
-    profileImage: string;
-  };
-  imageUrl: string;
-}
+type ProductCardProps = Product;
 
 export default function ProductCard({
-  id, //test
+  id,
   name,
   price,
   creator,
   imageUrl,
+  productType,
 }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -40,7 +32,7 @@ export default function ProductCard({
           {name}
         </h3>
 
-        {/* Creator Info */}
+        {/* Creator Info (clickable avatar + name) */}
         <Link
           to={`/user/${creator.id}`}
           className="flex items-center gap-2 hover:opacity-80 transition"
@@ -64,13 +56,15 @@ export default function ProductCard({
             <button
               className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700"
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              aria-label="Decrease quantity"
             >
               <Minus size={16} />
             </button>
-            <span className="px-3">{quantity}</span>
+            <span className="px-3 select-none">{quantity}</span>
             <button
               className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700"
               onClick={() => setQuantity(quantity + 1)}
+              aria-label="Increase quantity"
             >
               <Plus size={16} />
             </button>
@@ -78,25 +72,26 @@ export default function ProductCard({
         </div>
 
         {/* Actions */}
-				<div className="flex justify-between mt-2">
-					<button className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-500 text-white hover:bg-green-600">
-						<ShoppingCart size={18} /> Add
-					</button>
+        <div className="flex justify-between mt-2">
+          <button className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-500 text-white hover:bg-green-600">
+            <ShoppingCart size={18} /> Add
+          </button>
 
-					<button
-						onClick={() => setIsFavorited(!isFavorited)}
-						className="p-2 rounded-xl border hover:bg-gray-100 dark:hover:bg-gray-700 transition transform hover:scale-110"
-					>
-						<Heart
-							size={18}
-							className={`transition-colors duration-200 ${
-								isFavorited
-									? "text-red-500 fill-red-500"
-									: "text-gray-500 hover:text-red-500 hover:fill-red-500"
-							}`}
-						/>
-					</button>
-				</div>
+          <button
+            onClick={() => setIsFavorited(!isFavorited)}
+            className="p-2 rounded-xl border hover:bg-gray-100 dark:hover:bg-gray-700 transition transform hover:scale-110"
+            aria-label="Toggle favorite"
+          >
+            <Heart
+              size={18}
+              className={`transition-colors duration-200 ${
+                isFavorited
+                  ? "text-red-500 fill-red-500"
+                  : "text-gray-500 hover:text-red-500 hover:fill-red-500"
+              }`}
+            />
+          </button>
+        </div>
       </div>
     </div>
   );
