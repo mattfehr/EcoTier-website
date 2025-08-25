@@ -1,45 +1,41 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Heart, ShoppingCart, Minus, Plus } from "lucide-react";
 import type { Product } from "../../../shared/types/product";
 
-// Temporary mock (replace with API later)
-const mockProducts: Product[] = [
-  {
-    id: 1,
-    name: "EcoTower Pro",
-    price: 199.99,
-    productType: "towers",
-    creator: {
-      id: "user1",
-      name: "Matthew",
-      profileImage: "https://via.placeholder.com/40x40",
-    },
-    imageUrl: "https://via.placeholder.com/600x400",
-  },
-  {
-    id: 2,
-    name: "Herb Module",
-    price: 49.99,
-    productType: "modules",
-    creator: {
-      id: "user2",
-      name: "Grace",
-      profileImage: "https://via.placeholder.com/40x40",
-    },
-    imageUrl: "https://via.placeholder.com/600x400",
-  },
-];
-
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
-  const product = mockProducts.find((p) => p.id === Number(id));
-
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [isFavorited, setIsFavorited] = useState(false);
 
-  if (!product) {
-    return <div className="p-6">Product not found.</div>;
+  useEffect(() => {
+    if (!id) return;
+
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/products/${id}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        setProduct(data);
+      } catch (err) {
+        console.error("Failed to load product:", err);
+        setError("Unable to load product.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
+
+  if (loading) {
+    return <div className="p-6 text-gray-600 dark:text-gray-300">Loading product...</div>;
+  }
+
+  if (error || !product) {
+    return <div className="p-6 text-red-500">Product not found.</div>;
   }
 
   return (
@@ -117,16 +113,14 @@ export default function ProductPage() {
       <section>
         <h2 className="text-xl font-semibold mb-2">Description</h2>
         <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-          This is a placeholder description. Later, this will come from the
-          database and include details about materials, features, and use cases.
+          {product.description || "No description available."}
         </p>
       </section>
 
-      {/* Comments */}
+      {/* Comments (still static for now) */}
       <section>
         <h2 className="text-xl font-semibold mb-4">Comments</h2>
         <div className="space-y-4">
-          {/* Existing comments (static for now) */}
           <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl">
             <p className="text-sm font-medium">Grace</p>
             <p className="text-gray-700 dark:text-gray-300">
@@ -140,7 +134,6 @@ export default function ProductPage() {
             </p>
           </div>
 
-          {/* Add new comment */}
           <form className="flex gap-2">
             <input
               type="text"

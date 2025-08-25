@@ -1,86 +1,69 @@
 import { useParams } from "react-router-dom";
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { UserPublicProfile } from "../../../shared/types/user";
 import type { Product, ProductType } from "../../../shared/types/product";
+
 import ProductCard from "../components/ProductCard";
 import ShopFilter from "../components/ShopFilter";
-
-// Mock data — later fetch from backend
-const mockUsers = [
-  {
-    id: "user1",
-    name: "Matthew",
-    profileImage: "https://via.placeholder.com/100",
-    bio: "Engineer & indoor farming enthusiast.",
-  },
-  {
-    id: "user2",
-    name: "Grace",
-    profileImage: "https://via.placeholder.com/100",
-    bio: "Designer and hydroponics innovator.",
-  },
-];
-
-// Mock products belonging to users
-const mockProducts: Product[] = [
-  {
-    id: 1,
-    name: "EcoTower Pro",
-    price: 199.99,
-    productType: "towers",
-    creator: {
-      id: "user1",
-      name: "Matthew",
-      profileImage: "https://via.placeholder.com/40",
-    },
-    imageUrl: "https://via.placeholder.com/600x400",
-  },
-  {
-    id: 2,
-    name: "Herb Module",
-    price: 49.99,
-    productType: "modules",
-    creator: {
-      id: "user2",
-      name: "Grace",
-      profileImage: "https://via.placeholder.com/40",
-    },
-    imageUrl: "https://via.placeholder.com/600x400",
-  },
-  {
-    id: 3,
-    name: "SunShield Add-on",
-    price: 29.0,
-    productType: "addons",
-    creator: {
-      id: "user1",
-      name: "Matthew",
-      profileImage: "https://via.placeholder.com/40",
-    },
-    imageUrl: "https://via.placeholder.com/600x400",
-  },
-];
+import ShopSort from "../components/ShopSort";
 
 type Mode = "all" | ProductType;
 
 export default function UserPage() {
   const { id } = useParams<{ id: string }>();
-  const user = mockUsers.find((u) => u.id === id);
-
+  const [user, setUser] = useState<UserPublicProfile | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
+
   const [mode, setMode] = useState<Mode>("all");
+  const [sort, setSort] = useState<"new" | "price">("new");
+  const [order, setOrder] = useState<"asc" | "desc">("desc");
 
-  if (!user) {
-    return <div className="p-6">User not found.</div>;
-  }
+  useEffect(() => {
+    if (!id) return;
 
-  // Products belonging to this user
-  const userProducts = mockProducts.filter((p) => p.creator.id === user.id);
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/users/${id}`);
+        if (!res.ok) throw new Error("Failed to fetch user");
 
-  // Apply filter
+        const data: UserPublicProfile = await res.json();
+        setUser(data);
+      } catch (err) {
+        console.error("❌ Error loading user:", err);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, [id]);
+
   const filteredProducts = useMemo(() => {
-    if (mode === "all") return userProducts;
-    return userProducts.filter((p) => p.productType === mode);
-  }, [mode, userProducts]);
+    if (!user) return [];
+
+    let filtered = mode === "all"
+      ? user.products || []
+      : (user.products || []).filter((p) => p.productType === mode);
+
+    // Apply sort
+    if (sort === "price") {
+      filtered = [...filtered].sort((a, b) =>
+        order === "asc" ? a.price - b.price : b.price - a.price
+      );
+    } else {
+      // Assuming 'new' means most recently created, so sort by ID or creation date if available
+      filtered = [...filtered].sort((a, b) =>
+        order === "asc" ? a.id - b.id : b.id - a.id
+      );
+    }
+
+    return filtered;
+  }, [user, mode, sort, order]);
+
+  if (loading) return <div className="p-6">Loading user data...</div>;
+  if (!user) return <div className="p-6">User not found.</div>;
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -89,12 +72,12 @@ export default function UserPage() {
         <div className="flex items-center gap-4">
           <img
             src={user.profileImage}
-            alt={user.name}
+            alt={user.username}
             className="w-20 h-20 rounded-full object-cover"
           />
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {user.name}
+              {user.username}
             </h1>
             <p className="text-gray-600 dark:text-gray-400">{user.bio}</p>
           </div>
@@ -116,8 +99,18 @@ export default function UserPage() {
       <div className="border-t pt-6">
         <h2 className="text-xl font-semibold mb-4">Creations</h2>
 
-        {/* Filter */}
-        <ShopFilter mode={mode} onChange={setMode} />
+        {/* Filter + Sort */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <ShopFilter mode={mode} onChange={setMode} />
+          <ShopSort
+            sort={sort}
+            order={order}
+            onChange={(s, o) => {
+              setSort(s);
+              setOrder(o);
+            }}
+          />
+        </div>
 
         {/* Grid */}
         <div className="mt-4">

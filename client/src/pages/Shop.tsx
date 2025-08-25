@@ -1,69 +1,75 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import ProductCard from "../components/ProductCard";
-import type { Product, ProductType } from "../../../shared/types/product"; 
 import ShopFilter from "../components/ShopFilter";
+import ShopSort from "../components/ShopSort";
+import type { Product, ProductType } from "../../../shared/types/product";
 
 type Mode = "all" | ProductType;
 
-// Mock data shaped like real API responses
-const mockProducts: Product[] = [
-  {
-    id: 1,
-    name: "EcoTower Pro",
-    price: 199.99,
-    productType: "towers",
-    creator: {
-      id: "user1",
-      name: "Matthew",
-      profileImage: "https://via.placeholder.com/40x40",
-    },
-    imageUrl: "https://via.placeholder.com/600x400",
-  },
-  {
-    id: 2,
-    name: "Herb Module",
-    price: 49.99,
-    productType: "modules",
-    creator: {
-      id: "user2",
-      name: "Grace",
-      profileImage: "https://via.placeholder.com/40x40",
-    },
-    imageUrl: "https://via.placeholder.com/600x400",
-  },
-  {
-    id: 3,
-    name: "SunShield Add‑on",
-    price: 29.0,
-    productType: "addons",
-    creator: {
-      id: "user1",
-      name: "Matthew",
-      profileImage: "https://via.placeholder.com/40x40",
-    },
-    imageUrl: "https://via.placeholder.com/600x400",
-  },
-];
-
 export default function Shop() {
   const [mode, setMode] = useState<Mode>("all");
+  const [sort, setSort] = useState<"new" | "price">("new");
+  const [order, setOrder] = useState<"asc" | "desc">("desc");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const products = useMemo(() => {
-    if (mode === "all") return mockProducts;
-    return mockProducts.filter((p) => p.productType === mode);
-  }, [mode]);
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/products?sort=${sort}&order=${order}`
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        setProducts(data);
+      } catch (err) {
+        console.error("❌ Failed to fetch products:", err);
+        setError("Unable to load products. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [sort, order]);
+
+  const filtered = mode === "all"
+    ? products
+    : products.filter((p) => p.productType === mode);
 
   return (
-    <div className="p-6 space-y-4">
-      {/* Filter bar */}
-      <ShopFilter mode={mode} onChange={setMode} />
-
-      {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {products.map((p) => (
-          <ProductCard key={p.id} {...p} />
-        ))}
+    <div className="p-6 space-y-6">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-bold">Shop Products</h1>
+        <p className="mt-2 text-gray-600 dark:text-gray-300">
+          Browse and filter modular tower components.
+        </p>
       </div>
+
+      {/* Filter + Sort */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <ShopFilter mode={mode} onChange={setMode} />
+        <ShopSort sort={sort} order={order} onChange={(s, o) => {
+          setSort(s);
+          setOrder(o);
+        }} />
+      </div>
+
+      {/* Results */}
+      {loading ? (
+        <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+          Loading products...
+        </div>
+      ) : error ? (
+        <div className="text-red-500 text-center">{error}</div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {filtered.map((p) => (
+            <ProductCard key={p.id} {...p} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

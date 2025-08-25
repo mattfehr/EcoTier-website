@@ -1,14 +1,31 @@
-import express from 'express';
-import dotenv from 'dotenv';
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+
+import productsRouter from "./routes/productsRoutes";
+import userRouter from "./routes/userRoutes"; 
 
 dotenv.config();
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 
-app.get('/', (req, res) => {
-  res.send('EcoTier API is running');
+// Base route
+app.get("/", (_req, res) => {
+  res.send("EcoTier API is running");
 });
 
+// Health check 
+app.get("/health", (_req, res) => {
+  res.json({ ok: true });
+});
+
+// Products API
+app.use("/products", productsRouter);
+
+// Users API
+app.use("/users", userRouter);
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
