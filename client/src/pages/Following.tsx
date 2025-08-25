@@ -1,15 +1,21 @@
 import { useEffect, useState } from "react";
-import type { FollowerMinimal } from "../../../shared/types/user";
 import { Link } from "react-router-dom";
+import type { FollowerMinimal } from "../../../shared/types/user";
+import { useAuth } from "../context/AuthContext";
 
 export default function Following() {
+  const { user: currentUser, loading: authLoading } = useAuth();
   const [following, setFollowing] = useState<FollowerMinimal[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!currentUser) return;
+
     const fetchFollowing = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/me/following`);
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/users/${currentUser.id}/following`
+        );
         if (!res.ok) throw new Error("Failed to fetch following");
 
         const data: FollowerMinimal[] = await res.json();
@@ -22,7 +28,11 @@ export default function Following() {
     };
 
     fetchFollowing();
-  }, []);
+  }, [currentUser]);
+
+  if (authLoading || loading) {
+    return <div className="p-6 text-gray-500">Loading...</div>;
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -32,14 +42,12 @@ export default function Following() {
       </p>
 
       <div className="mt-6 divide-y divide-gray-200 dark:divide-gray-700 border rounded-md">
-        {loading ? (
-          <p className="p-4 text-gray-500">Loading...</p>
-        ) : following.length === 0 ? (
+        {following.length === 0 ? (
           <p className="p-4 text-gray-500">You’re not following anyone yet.</p>
         ) : (
           following.map((user) => (
             <Link
-              to={`/users/${user.id}`}
+              to={`/user/${user.id}`}
               key={user.id}
               className="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
             >
