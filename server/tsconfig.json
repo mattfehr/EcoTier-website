@@ -1,23 +1,16 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "nodenext",
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
     "lib": ["esnext"],
-    "moduleResolution": "nodenext",    
     "esModuleInterop": true,
-    "types": ["node"],
     "rootDir": "./src",
     "outDir": "./dist",
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
     "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "noUncheckedSideEffectImports": true,
-    "moduleDetection": "force",
-    "skipLibCheck": true
-  }
+    "skipLibCheck": true,
+    "sourceMap": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
 }
