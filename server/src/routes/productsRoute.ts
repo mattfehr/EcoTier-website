@@ -13,15 +13,25 @@ type ProductWithCreator = Prisma.ProductGetPayload<{
   };
 }>;
 
-router.get("/", async (_req, res) => {
+router.get("/", async (req, res) => {
   try {
+    const {
+      sort = "new",
+      order = "desc",
+    } = req.query as Record<string, string>;
+
+    // Determine sorting field based on query
+    let orderBy: any = { createTime: order as "asc" | "desc" };
+    if (sort === "price") orderBy = { price: order as "asc" | "desc" };
+    if (sort === "updated") orderBy = { updateTime: order as "asc" | "desc" };
+
     const products: ProductWithCreator[] = await prisma.product.findMany({
       include: {
         creator: {
           select: { id: true, username: true, profileImage: true }
         }
       },
-      orderBy: { createTime: "desc" }
+      orderBy,
     });
 
     const shaped: Product[] = products.map((p) => ({

@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import ProductCard from "../components/ProductCard";
-import type { Product, ProductType } from "../../../shared/types/product";
 import ShopFilter from "../components/ShopFilter";
+import ShopSort from "../components/ShopSort";
+import type { Product, ProductType } from "../../../shared/types/product";
 
 type Mode = "all" | ProductType;
 
 export default function Shop() {
   const [mode, setMode] = useState<Mode>("all");
+  const [sort, setSort] = useState<"new" | "price">("new");
+  const [order, setOrder] = useState<"asc" | "desc">("desc");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -15,7 +18,9 @@ export default function Shop() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/products`);
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/products?sort=${sort}&order=${order}`
+        );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setProducts(data);
@@ -26,16 +31,32 @@ export default function Shop() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [sort, order]);
 
   const filtered = mode === "all"
     ? products
     : products.filter((p) => p.productType === mode);
 
   return (
-    <div className="p-6 space-y-4">
-      <ShopFilter mode={mode} onChange={setMode} />
+    <div className="p-6 space-y-6">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-bold">Shop Products</h1>
+        <p className="mt-2 text-gray-600 dark:text-gray-300">
+          Browse and filter modular tower components.
+        </p>
+      </div>
 
+      {/* Filter + Sort */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <ShopFilter mode={mode} onChange={setMode} />
+        <ShopSort sort={sort} order={order} onChange={(s, o) => {
+          setSort(s);
+          setOrder(o);
+        }} />
+      </div>
+
+      {/* Results */}
       {loading ? (
         <div className="text-center py-10 text-gray-500 dark:text-gray-400">
           Loading products...
