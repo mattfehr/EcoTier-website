@@ -1,6 +1,7 @@
 // src/pages/Home.tsx
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import FeatureProduct from "../components/FeatureProduct";
 
 type Product = {
   product_id: string;
@@ -11,6 +12,23 @@ type Product = {
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const data = [
+    {
+      id: 1,
+      title: "Featured Tower 1",
+      imageUrl: "/"
+    }, 
+    {
+      id: 2,
+      title: "Featured Tower 2",
+      imageUrl: "/"
+    }, 
+    {
+      id: 3,
+      title: "Featured Tower 3",
+      imageUrl: "/"
+    }
+  ]
 
   useEffect(() => {
     async function fetchProducts() {
@@ -35,6 +53,16 @@ export default function Home() {
       <h1 className="text-2xl font-bold mb-4">Welcome to EcoTier Solutions</h1>
       {loading && <p>Loading products...</p>}
       {!loading && products.length === 0 && <p>No products found.</p>}
+      <div>
+        Feature product
+        <FeatureProduct data = {data}/>
+      </div>
+      <div>
+        About us
+      </div>
+      <div>
+        What is aeroponic? 
+      </div>
       <ul className="space-y-2">
         {products.map((p) => (
           <li key={p.product_id} className="border p-3 rounded shadow-sm flex justify-between">
