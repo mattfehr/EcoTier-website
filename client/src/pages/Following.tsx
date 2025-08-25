@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { FollowerMinimal } from "../../../shared/types/user";
 import { useAuth } from "../context/AuthContext";
+import { routes } from "../utils/routes"; // ✅ import route helpers
 
 export default function Following() {
   const { user: currentUser, loading: authLoading } = useAuth();
@@ -47,7 +48,7 @@ export default function Following() {
         ) : (
           following.map((user) => (
             <Link
-              to={`/user/${user.id}`}
+              to={routes.user(user.id)} // ✅ use route helper
               key={user.id}
               className="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
             >

@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
+import { routes } from "./utils/routes";
 
-// Import page components
 import Home from "./pages/Home";
 import Shop from "./pages/Shop";
 import Library from "./pages/Library";
@@ -18,22 +18,17 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<MainLayout />}>
-          {/* Main pages */}
-          <Route index element={<Home />} /> {/* same as path="/" */}
-          <Route path="shop" element={<Shop />} />
-          <Route path="library" element={<Library />} />
-          <Route path="favorites" element={<Favorites />} />
-          <Route path="following" element={<Following />} />
-          <Route path="cart" element={<Cart />} />
-          <Route path="login" element={<Login />} />
-          <Route path="faq" element={<FAQ />} />
-
-          {/* Dynamic product route */}
+          <Route index element={<Home />} />
+          <Route path={routes.shop} element={<Shop />} />
+          <Route path={routes.library} element={<Library />} />
+          <Route path={routes.favorites} element={<Favorites />} />
+          <Route path={routes.following} element={<Following />} />
+          <Route path={routes.cart} element={<Cart />} />
+          <Route path={routes.login} element={<Login />} />
+          <Route path={routes.faq} element={<FAQ />} />
           <Route path="product/:id" element={<ProductPage />} />
           <Route path="user/:id" element={<UserPage />} />
-
-          {/* Catch-all for unknown routes */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to={routes.home} replace />} />
         </Route>
       </Routes>
     </BrowserRouter>

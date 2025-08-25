@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { routes } from "../utils/routes"; // ✅ import route helpers
 
 export default function AuthForm() {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -68,7 +69,7 @@ export default function AuthForm() {
         console.log("✅ Logged in");
       }
 
-      navigate("/");
+      navigate(routes.home); // ✅ now using route helper
     } catch (err: any) {
       console.error("❌ Auth error:", err);
       setError(err.message || "An unknown error occurred");
