@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import type { UserPublicProfile } from "../../../shared/types/user";
 import type { Product, ProductType } from "../../../shared/types/product";
 
@@ -11,6 +12,7 @@ type Mode = "all" | ProductType;
 
 export default function UserPage() {
   const { id } = useParams<{ id: string }>();
+  const { user: currentUser } = useAuth();
   const [user, setUser] = useState<UserPublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -19,12 +21,13 @@ export default function UserPage() {
   const [sort, setSort] = useState<"new" | "price">("new");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
 
+  // Fetch user profile
   useEffect(() => {
     if (!id) return;
 
     const fetchUser = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/users/${id}`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${id}`);
         if (!res.ok) throw new Error("Failed to fetch user");
 
         const data: UserPublicProfile = await res.json();
@@ -40,6 +43,44 @@ export default function UserPage() {
     fetchUser();
   }, [id]);
 
+  // Check if current user is following this profile
+  useEffect(() => {
+    if (!id || !currentUser) return;
+
+    const checkFollowing = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${currentUser.id}/following`);
+        const data = await res.json();
+        const isFollowed = data.some((u: { id: string }) => u.id === id);
+        setIsFollowing(isFollowed);
+      } catch (err) {
+        console.error("Error checking follow status:", err);
+      }
+    };
+
+    checkFollowing();
+  }, [id, currentUser]);
+
+  const handleFollowToggle = async () => {
+    if (!id || !currentUser) return;
+
+    const method = isFollowing ? "DELETE" : "POST";
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${id}/follow`, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: currentUser.id }),
+      });
+
+      if (!res.ok) throw new Error("Failed to follow/unfollow");
+
+      setIsFollowing(!isFollowing);
+    } catch (err) {
+      console.error("Error toggling follow:", err);
+    }
+  };
+
   const filteredProducts = useMemo(() => {
     if (!user) return [];
 
@@ -47,13 +88,11 @@ export default function UserPage() {
       ? user.products || []
       : (user.products || []).filter((p) => p.productType === mode);
 
-    // Apply sort
     if (sort === "price") {
       filtered = [...filtered].sort((a, b) =>
         order === "asc" ? a.price - b.price : b.price - a.price
       );
     } else {
-      // Assuming 'new' means most recently created, so sort by ID or creation date if available
       filtered = [...filtered].sort((a, b) =>
         order === "asc" ? a.id - b.id : b.id - a.id
       );
@@ -83,23 +122,24 @@ export default function UserPage() {
           </div>
         </div>
 
-        <button
-          onClick={() => setIsFollowing(!isFollowing)}
-          className={`px-4 py-2 rounded-xl text-white transition ${
-            isFollowing
-              ? "bg-red-500 hover:bg-red-600"
-              : "bg-blue-500 hover:bg-blue-600"
-          }`}
-        >
-          {isFollowing ? "Unfollow" : "Follow +"}
-        </button>
+        {currentUser?.id !== user.id && (
+          <button
+            onClick={handleFollowToggle}
+            className={`px-4 py-2 rounded-xl text-white transition ${
+              isFollowing
+                ? "bg-red-500 hover:bg-red-600"
+                : "bg-blue-500 hover:bg-blue-600"
+            }`}
+          >
+            {isFollowing ? "Unfollow" : "Follow +"}
+          </button>
+        )}
       </div>
 
-      {/* Divider with section title */}
+      {/* Creations */}
       <div className="border-t pt-6">
         <h2 className="text-xl font-semibold mb-4">Creations</h2>
 
-        {/* Filter + Sort */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <ShopFilter mode={mode} onChange={setMode} />
           <ShopSort
@@ -112,7 +152,6 @@ export default function UserPage() {
           />
         </div>
 
-        {/* Grid */}
         <div className="mt-4">
           {filteredProducts.length === 0 ? (
             <p className="text-gray-600 dark:text-gray-400">

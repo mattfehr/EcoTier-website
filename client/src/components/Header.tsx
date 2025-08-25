@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
 import betterlogo from "../assets/betterlogo.png";
 import { useAuth } from "../context/AuthContext";
+import { routes } from "../utils/routes"; // adjust path as needed
 
 export default function Header() {
   const { user, signOut } = useAuth();
@@ -18,38 +19,38 @@ export default function Header() {
     if (!confirmLogout) return;
 
     await signOut();
-    navigate("/"); // redirect to home
+    navigate(routes.home); // ✅ uses route helper now
   };
 
   return (
     <header className="flex items-center justify-between px-6 py-3 border-b border-gray-200 bg-white shadow-sm">
       {/* Left side */}
       <div className="flex items-center space-x-6">
-        <Link to="/" className="flex items-center space-x-2">
+        <Link to={routes.home} className="flex items-center space-x-2">
           <img src={betterlogo} alt="EcoTier Solutions" className="h-8 w-8" />
           <span className="font-bold text-lg">EcoTier Solutions</span>
         </Link>
 
-        <NavLink to="/" className={navLinkClass}>
+        <NavLink to={routes.home} className={navLinkClass}>
           Home
         </NavLink>
-        <NavLink to="/shop" className={navLinkClass}>
+        <NavLink to={routes.shop} className={navLinkClass}>
           Shop / Forum
         </NavLink>
-        <NavLink to="/library" className={navLinkClass}>
+        <NavLink to={routes.library} className={navLinkClass}>
           Library
         </NavLink>
-        <NavLink to="/favorites" className={navLinkClass}>
+        <NavLink to={routes.favorites} className={navLinkClass}>
           Favorites
         </NavLink>
-        <NavLink to="/following" className={navLinkClass}>
+        <NavLink to={routes.following} className={navLinkClass}>
           Following
         </NavLink>
       </div>
 
       {/* Right side */}
       <div className="flex items-center space-x-4">
-        <NavLink to="/cart" className="relative">
+        <NavLink to={routes.cart} className="relative">
           <ShoppingCart className="h-6 w-6 text-gray-700 hover:text-green-600" />
           <span className="absolute -top-1 -right-2 text-xs bg-green-600 text-white rounded-full px-1">
             0
@@ -65,7 +66,7 @@ export default function Header() {
           </button>
         ) : (
           <NavLink
-            to="/login"
+            to={routes.login}
             className="px-3 py-1 rounded-md bg-blue-500 text-white text-sm hover:bg-blue-600"
           >
             Log In

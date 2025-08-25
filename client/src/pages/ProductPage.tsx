@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { Heart, ShoppingCart, Minus, Plus } from "lucide-react";
 import type { Product } from "../../../shared/types/product";
+import { routes } from "../utils/routes"; // ✅ import route helpers
 
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,7 +18,7 @@ export default function ProductPage() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/products/${id}`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setProduct(data);
@@ -53,8 +54,11 @@ export default function ProductPage() {
           {product.name}
         </h1>
 
-        {/* Creator */}
-        <div className="flex items-center gap-2">
+        {/* ✅ Creator section is now a link */}
+        <Link
+          to={routes.user(product.creator.id)}
+          className="flex items-center gap-2 hover:opacity-80 transition"
+        >
           <img
             src={product.creator.profileImage}
             alt={product.creator.name}
@@ -63,7 +67,7 @@ export default function ProductPage() {
           <p className="text-gray-700 dark:text-gray-300">
             {product.creator.name}
           </p>
-        </div>
+        </Link>
 
         {/* Price + Quantity */}
         <div className="flex items-center gap-6">

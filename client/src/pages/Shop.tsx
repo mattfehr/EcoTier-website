@@ -19,7 +19,7 @@ export default function Shop() {
       try {
         setLoading(true);
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/products?sort=${sort}&order=${order}`
+          `${import.meta.env.VITE_API_URL}/api/products?sort=${sort}&order=${order}`
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();

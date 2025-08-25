@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Heart, ShoppingCart, Minus, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
-import type { Product } from "../../../shared/types/product"; // shared types
+import type { Product } from "../../../shared/types/product";
+import { routes } from "../utils/routes"; // adjust path if needed
 
 type ProductCardProps = Product;
 
@@ -19,7 +20,7 @@ export default function ProductCard({
   return (
     <div className="rounded-2xl shadow-md bg-white dark:bg-gray-800 overflow-hidden hover:shadow-lg transition">
       {/* Product Image */}
-      <Link to={`/product/${id}`}>
+      <Link to={routes.product(id)}>
         <img
           src={imageUrl}
           alt={name}
@@ -31,14 +32,14 @@ export default function ProductCard({
       <div className="p-4 flex flex-col gap-3">
         {/* Product Name */}
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          <Link to={`/product/${id}`} className="hover:underline">
+          <Link to={routes.product(id)} className="hover:underline">
             {name}
           </Link>
         </h3>
 
         {/* Creator Info (clickable avatar + name) */}
         <Link
-          to={`/user/${creator.id}`}
+          to={routes.user(creator.id)}
           className="flex items-center gap-2 hover:opacity-80 transition"
         >
           <img
