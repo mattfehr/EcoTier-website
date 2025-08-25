@@ -1,9 +1,9 @@
-// src/index.ts
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 
-import productsRouter from "./routes/productsRoute";
+import productsRouter from "./routes/productsRoutes";
+import userRouter from "./routes/userRoutes"; 
 
 dotenv.config();
 const app = express();
@@ -23,6 +23,9 @@ app.get("/health", (_req, res) => {
 
 // Products API
 app.use("/products", productsRouter);
+
+// Users API
+app.use("/users", userRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
