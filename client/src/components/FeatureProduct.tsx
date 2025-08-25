@@ -80,7 +80,7 @@ const Carousel: React.FC<CarouselProps> = ({ data = [], duration = 4900 }) => {
                   }}
                 />
               </div>
-              <div className="w-full text-left text-base tracking-wider leading-7 text-amber-300 py-4 px-4">
+              <div className="w-full text-left text-base tracking-wider leading-7 text-green-600 py-4 px-4">
                 {item?.title}
               </div>
             </div>
@@ -103,7 +103,7 @@ const Carousel: React.FC<CarouselProps> = ({ data = [], duration = 4900 }) => {
                   <div className="absolute bottom-0 left-0 w-full h-2 bg-transparent rounded-full">
                     <div
                       ref={progressRef}
-                      className="h-full bg-amber-300 rounded-full"
+                      className="h-full bg-green-600 rounded-full"
                     />
                   </div>
                 )}

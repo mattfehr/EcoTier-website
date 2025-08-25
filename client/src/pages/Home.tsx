@@ -16,17 +16,17 @@ export default function Home() {
     {
       id: 1,
       title: "Featured Tower 1",
-      imageUrl: "/"
+      imageUrl: "https://picsum.photos/1500/600"
     }, 
     {
       id: 2,
       title: "Featured Tower 2",
-      imageUrl: "/"
+      imageUrl: "https://picsum.photos/1500/600"
     }, 
     {
       id: 3,
       title: "Featured Tower 3",
-      imageUrl: "/"
+      imageUrl: "https://picsum.photos/1500/600"
     }
   ]
 
@@ -50,7 +50,7 @@ export default function Home() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Welcome to EcoTier Solutions</h1>
+      <h1 className="text-4xl font-bold mb-4">Welcome to EcoTier Solutions</h1>
       {loading && <p>Loading products...</p>}
       {!loading && products.length === 0 && <p>No products found.</p>}
       <div>
