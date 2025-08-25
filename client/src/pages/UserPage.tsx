@@ -5,6 +5,7 @@ import type { Product, ProductType } from "../../../shared/types/product";
 
 import ProductCard from "../components/ProductCard";
 import ShopFilter from "../components/ShopFilter";
+import ShopSort from "../components/ShopSort";
 
 type Mode = "all" | ProductType;
 
@@ -12,8 +13,11 @@ export default function UserPage() {
   const { id } = useParams<{ id: string }>();
   const [user, setUser] = useState<UserPublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isFollowing, setIsFollowing] = useState(false); // optional feature
+  const [isFollowing, setIsFollowing] = useState(false);
+
   const [mode, setMode] = useState<Mode>("all");
+  const [sort, setSort] = useState<"new" | "price">("new");
+  const [order, setOrder] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
     if (!id) return;
@@ -38,9 +42,25 @@ export default function UserPage() {
 
   const filteredProducts = useMemo(() => {
     if (!user) return [];
-    if (mode === "all") return user.products || [];
-    return (user.products || []).filter((p) => p.productType === mode);
-  }, [mode, user]);
+
+    let filtered = mode === "all"
+      ? user.products || []
+      : (user.products || []).filter((p) => p.productType === mode);
+
+    // Apply sort
+    if (sort === "price") {
+      filtered = [...filtered].sort((a, b) =>
+        order === "asc" ? a.price - b.price : b.price - a.price
+      );
+    } else {
+      // Assuming 'new' means most recently created, so sort by ID or creation date if available
+      filtered = [...filtered].sort((a, b) =>
+        order === "asc" ? a.id - b.id : b.id - a.id
+      );
+    }
+
+    return filtered;
+  }, [user, mode, sort, order]);
 
   if (loading) return <div className="p-6">Loading user data...</div>;
   if (!user) return <div className="p-6">User not found.</div>;
@@ -79,8 +99,20 @@ export default function UserPage() {
       <div className="border-t pt-6">
         <h2 className="text-xl font-semibold mb-4">Creations</h2>
 
-        <ShopFilter mode={mode} onChange={setMode} />
+        {/* Filter + Sort */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <ShopFilter mode={mode} onChange={setMode} />
+          <ShopSort
+            sort={sort}
+            order={order}
+            onChange={(s, o) => {
+              setSort(s);
+              setOrder(o);
+            }}
+          />
+        </div>
 
+        {/* Grid */}
         <div className="mt-4">
           {filteredProducts.length === 0 ? (
             <p className="text-gray-600 dark:text-gray-400">
