@@ -24,7 +24,7 @@ export default function UserPage() {
 
     const fetchUser = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/users/${id}`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${id}`);
         if (!res.ok) throw new Error("Failed to fetch user");
 
         const data: UserPublicProfile = await res.json();

@@ -17,7 +17,7 @@ export default function ProductPage() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/products/${id}`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setProduct(data);

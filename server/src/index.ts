@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 
 import productsRouter from "./routes/productsRoutes";
-import userRouter from "./routes/userRoutes"; 
+import userRouter from "./routes/userRoutes";
 
 dotenv.config();
 const app = express();
@@ -16,16 +16,14 @@ app.get("/", (_req, res) => {
   res.send("EcoTier API is running");
 });
 
-// Health check 
+// Health check
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
 
-// Products API
-app.use("/products", productsRouter);
-
-// Users API
-app.use("/users", userRouter);
+// API routes
+app.use("/api/products", productsRouter);
+app.use("/api/users", userRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

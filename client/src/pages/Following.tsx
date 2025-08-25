@@ -9,7 +9,7 @@ export default function Following() {
   useEffect(() => {
     const fetchFollowing = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/users/me/following`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/me/following`);
         if (!res.ok) throw new Error("Failed to fetch following");
 
         const data: FollowerMinimal[] = await res.json();
