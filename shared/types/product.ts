@@ -7,4 +7,5 @@ export interface Product {
   productType: ProductType;
   creator: { id: string; name: string; profileImage: string };
   imageUrl: string;
+  description?: string; 
 }
