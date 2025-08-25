@@ -7,103 +7,103 @@ datasource db {
   url      = env("DATABASE_URL") // From Supabase settings
 }
 
-model users {
+model User {
   id           String   @id @default(dbgenerated()) @db.Uuid // match auth.users.id
   username     String   @unique
   email        String   @unique
   createTime   DateTime @default(now())
-  profileImage String? //URL path to supabase storage bucket
+  profileImage String? // URL path to supabase storage bucket
   bio          String?
 
-  follows   follows[]   @relation("Follower")
-  following follows[]   @relation("Following")
-  questions questions[]
-  cartItems cartitem[]
-  favorites favorites[]
-  orders    orders[]    @relation("CustomerOrders")
-  comments  comments[]
-  products  products[]  @relation("CreatorProducts")
+  follows   Follow[]   @relation("Follower")
+  following Follow[]   @relation("Following")
+  questions Question[]
+  cartItems CartItem[]
+  favorites Favorite[]
+  orders    Order[]    @relation("CustomerOrders")
+  comments  Comment[]
+  products  Product[]  @relation("CreatorProducts")
 }
 
-model follows {
+model Follow {
   followerID  String @db.Uuid
   followingID String @db.Uuid
 
-  follower  users @relation("Follower", fields: [followerID], references: [id])
-  following users @relation("Following", fields: [followingID], references: [id])
+  follower  User @relation("Follower", fields: [followerID], references: [id])
+  following User @relation("Following", fields: [followingID], references: [id])
 
   @@id([followerID, followingID])
 }
 
-model questions {
+model Question {
   questionID   Int     @id @default(autoincrement())
   userID       String  @db.Uuid
-  questionType String // enum-like usage
+  questionType String
   content      String
   response     String?
 
-  user users @relation(fields: [userID], references: [id])
+  user User @relation(fields: [userID], references: [id])
 }
 
-model cartitem {
+model CartItem {
   userID    String @db.Uuid
   productID Int
   quantity  Int
 
-  user    users    @relation(fields: [userID], references: [id])
-  product products @relation(fields: [productID], references: [productID])
+  user    User    @relation(fields: [userID], references: [id])
+  product Product @relation(fields: [productID], references: [productID])
 
   @@id([userID, productID])
 }
 
-model favorites {
+model Favorite {
   userID    String @db.Uuid
   productID Int
 
-  user    users    @relation(fields: [userID], references: [id])
-  product products @relation(fields: [productID], references: [productID])
+  user    User    @relation(fields: [userID], references: [id])
+  product Product @relation(fields: [productID], references: [productID])
 
   @@id([userID, productID])
 }
 
-model orders {
+model Order {
   orderNumber  Int      @id @default(autoincrement())
   customerID   String   @db.Uuid
   address      String
   totalPrice   Float
   purchaseTime DateTime @default(now())
 
-  customer   users       @relation("CustomerOrders", fields: [customerID], references: [id])
-  orderItems orderitem[]
+  customer   User        @relation("CustomerOrders", fields: [customerID], references: [id])
+  orderItems OrderItem[]
 }
 
-model orderitem {
+model OrderItem {
   orderNumber     Int
   productID       Int
   quantity        Int
   priceAtPurchase Int
 
-  order   orders   @relation(fields: [orderNumber], references: [orderNumber])
-  product products @relation(fields: [productID], references: [productID])
+  order   Order   @relation(fields: [orderNumber], references: [orderNumber])
+  product Product @relation(fields: [productID], references: [productID])
 
   @@id([orderNumber, productID])
 }
 
-model comments {
+model Comment {
   userID    String   @db.Uuid
   productID Int
   content   String
   postTime  DateTime @default(now())
 
-  user    users    @relation(fields: [userID], references: [id])
-  product products @relation(fields: [productID], references: [productID])
+  user    User    @relation(fields: [userID], references: [id])
+  product Product @relation(fields: [productID], references: [productID])
 
   @@id([userID, productID])
 }
 
-model products {
+model Product {
   productID   Int      @id @default(autoincrement())
-  productType String //also enum like usage
+  productType String // enum-like usage
   name        String   @unique
   creatorID   String   @db.Uuid
   price       Float
@@ -114,24 +114,24 @@ model products {
   PIN         String?
   imageURL    String?
 
-  creator    users       @relation("CreatorProducts", fields: [creatorID], references: [id])
-  orderItems orderitem[]
-  cartItems  cartitem[]
-  favorites  favorites[]
-  comments   comments[]
+  creator    User        @relation("CreatorProducts", fields: [creatorID], references: [id])
+  orderItems OrderItem[]
+  cartItems  CartItem[]
+  favorites  Favorite[]
+  comments   Comment[]
 
-  towersAsPart  towercomponents[] @relation("Part")
-  towersAsTower towercomponents[] @relation("Tower")
+  towersAsPart  TowerComponent[] @relation("Part")
+  towersAsTower TowerComponent[] @relation("Tower")
 }
 
-model towercomponents {
+model TowerComponent {
   towerID  Int
   partID   Int
   position Int
   quantity Int
 
-  tower products @relation("Tower", fields: [towerID], references: [productID])
-  part  products @relation("Part", fields: [partID], references: [productID])
+  tower Product @relation("Tower", fields: [towerID], references: [productID])
+  part  Product @relation("Part", fields: [partID], references: [productID])
 
   @@id([towerID, partID])
 }
