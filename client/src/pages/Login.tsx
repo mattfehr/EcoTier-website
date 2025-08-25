@@ -30,7 +30,10 @@ export default function AuthForm() {
             username,
             email,
           });
-          if (dbError) throw dbError;
+          if (dbError) {
+            console.error("🛑 DB Insert error:", dbError);
+            throw dbError;
+          }
         }
 
         console.log("✅ Signed up & inserted into users");

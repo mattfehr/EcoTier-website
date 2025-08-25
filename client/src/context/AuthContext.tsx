@@ -18,16 +18,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check initial session
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
+    const loadSession = async () => {
+      // Get the current session
+      const { data: sessionData } = await supabase.auth.getSession();
+      const sessionUser = sessionData.session?.user ?? null;
 
-    // Listen for login/logout
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      if (sessionUser) {
+        // Try to load the user’s metadata from the "User" table
+        const { data: userData, error } = await supabase
+          .from("users") // ✅ lowercase table name
+          .select("*")
+          .eq("id", sessionUser.id)
+          .single();
+
+        if (!error && userData) {
+          setUser({ ...sessionUser, ...userData }); // merge Supabase auth and table data
+        } else {
+          console.warn("⚠️ Could not fetch user metadata from 'User' table:", error);
+          setUser(sessionUser); // fallback to auth-only user
+        }
+      } else {
+        setUser(null);
+      }
+
       setLoading(false);
+    };
+
+    loadSession();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+      } else {
+        setUser(null);
+      }
     });
 
     return () => {
