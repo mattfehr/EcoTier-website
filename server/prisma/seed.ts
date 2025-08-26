@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding database...");
 
-  // 1. Users — valid UUIDs instead of "user1"/"user2"
+  // 1. Users — valid UUIDs
   const users = [
     {
       id: "11111111-1111-1111-1111-111111111111",
@@ -27,23 +27,17 @@ async function main() {
     await prisma.user.upsert({
       where: { id: user.id },
       update: {},
-      create: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        profileImage: user.profileImage,
-        bio: user.bio,
-      },
+      create: user,
     });
   }
 
-  // 2. Products — match creatorID with UUIDs above
+  // 2. Products — tower, module, addon
   const products = [
     {
       name: "EcoTower Pro",
       price: 199.99,
       productType: "towers",
-      creatorID: "11111111-1111-1111-1111-111111111111",
+      creatorID: users[0].id,
       imageURL: "https://via.placeholder.com/600x400",
       public: true,
       description: "Vertical hydroponic grow system",
@@ -52,37 +46,57 @@ async function main() {
       name: "Herb Module",
       price: 49.99,
       productType: "modules",
-      creatorID: "22222222-2222-2222-2222-222222222222",
+      creatorID: users[1].id,
       imageURL: "https://via.placeholder.com/600x400",
       public: true,
       description: "Great for leafy greens and herbs",
     },
     {
-      name: "SunShield Add‑on",
+      name: "SunShield Add-on",
       price: 29.0,
       productType: "addons",
-      creatorID: "11111111-1111-1111-1111-111111111111",
+      creatorID: users[0].id,
       imageURL: "https://via.placeholder.com/600x400",
       public: true,
       description: "Protects from harsh light",
     },
   ];
 
+  const createdProducts: Record<string, number> = {};
+
   for (const p of products) {
-    await prisma.product.upsert({
+    const product = await prisma.product.upsert({
       where: { name: p.name },
       update: {},
-      create: {
-        name: p.name,
-        productType: p.productType,
-        price: p.price,
-        public: p.public,
-        description: p.description,
-        imageURL: p.imageURL,
-        creatorID: p.creatorID,
-      },
+      create: p,
     });
+    createdProducts[p.name] = product.productID;
   }
+
+  // 3. TowerComponents — link modules/addons to tower
+  const towerID = createdProducts["EcoTower Pro"];
+  const herbModuleID = createdProducts["Herb Module"];
+  const sunShieldID = createdProducts["SunShield Add-on"];
+
+  // Clean up existing relations first (to avoid duplicates on re-seed)
+  await prisma.towerComponent.deleteMany({ where: { towerID } });
+
+  await prisma.towerComponent.createMany({
+    data: [
+      {
+        towerID,
+        partID: herbModuleID,
+        position: 1,
+        quantity: 2,
+      },
+      {
+        towerID,
+        partID: sunShieldID,
+        position: 2,
+        quantity: 1,
+      },
+    ],
+  });
 
   console.log("✅ Seed complete.");
 }
