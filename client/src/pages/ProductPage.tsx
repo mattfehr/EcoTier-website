@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Heart, ShoppingCart, Minus, Plus } from "lucide-react";
 import type { Product } from "../../../shared/types/product";
-import { routes } from "../utils/routes"; // ✅ import route helpers
+import { routes } from "../utils/routes";
+import { useAuth } from "../context/AuthContext";
 
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -11,7 +12,9 @@ export default function ProductPage() {
   const [error, setError] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [isFavorited, setIsFavorited] = useState(false);
+  const { user } = useAuth();
 
+  // Load product
   useEffect(() => {
     if (!id) return;
 
@@ -20,8 +23,19 @@ export default function ProductPage() {
         setLoading(true);
         const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const data: Product = await res.json();
         setProduct(data);
+
+        // ✅ preload favorite state via /contains endpoint
+        if (user) {
+          const favRes = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/favorites/${user.id}/contains/${data.id}`
+          );
+          if (favRes.ok) {
+            const { favorited } = await favRes.json();
+            setIsFavorited(favorited);
+          }
+        }
       } catch (err) {
         console.error("Failed to load product:", err);
         setError("Unable to load product.");
@@ -29,7 +43,29 @@ export default function ProductPage() {
         setLoading(false);
       }
     })();
-  }, [id]);
+  }, [id, user]);
+
+  // Toggle favorite
+  const toggleFavorite = async () => {
+    if (!user || !product) return;
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/favorites/toggle`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userID: user.id, productID: product.id }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to toggle favorite");
+      const data = await res.json();
+      setIsFavorited(data.favorited);
+    } catch (err) {
+      console.error("❌ Error toggling favorite:", err);
+    }
+  };
 
   if (loading) {
     return <div className="p-6 text-gray-600 dark:text-gray-300">Loading product...</div>;
@@ -54,7 +90,7 @@ export default function ProductPage() {
           {product.name}
         </h1>
 
-        {/* ✅ Creator section is now a link */}
+        {/* Creator */}
         <Link
           to={routes.user(product.creator.id)}
           className="flex items-center gap-2 hover:opacity-80 transition"
@@ -98,7 +134,7 @@ export default function ProductPage() {
             <ShoppingCart size={20} /> Add to Cart
           </button>
           <button
-            onClick={() => setIsFavorited(!isFavorited)}
+            onClick={toggleFavorite}
             className="p-3 rounded-xl border hover:bg-gray-100 dark:hover:bg-gray-700 transition transform hover:scale-110"
           >
             <Heart
@@ -121,37 +157,10 @@ export default function ProductPage() {
         </p>
       </section>
 
-      {/* Comments (still static for now) */}
+      {/* Comments placeholder */}
       <section>
         <h2 className="text-xl font-semibold mb-4">Comments</h2>
-        <div className="space-y-4">
-          <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl">
-            <p className="text-sm font-medium">Grace</p>
-            <p className="text-gray-700 dark:text-gray-300">
-              Love this design! Works great for herbs 🌿
-            </p>
-          </div>
-          <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl">
-            <p className="text-sm font-medium">Matthew</p>
-            <p className="text-gray-700 dark:text-gray-300">
-              Super modular and easy to set up.
-            </p>
-          </div>
-
-          <form className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Write a comment..."
-              className="flex-1 px-4 py-2 rounded-xl border dark:bg-gray-800 dark:text-white"
-            />
-            <button
-              type="submit"
-              className="px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600"
-            >
-              Post
-            </button>
-          </form>
-        </div>
+        {/* ... */}
       </section>
     </div>
   );

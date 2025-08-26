@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Heart, ShoppingCart, Minus, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Product } from "../../../shared/types/product";
-import { routes } from "../utils/routes"; // adjust path if needed
+import { routes } from "../utils/routes";
+import { useAuth } from "../context/AuthContext"; // ✅ get current user
 
 type ProductCardProps = Product;
 
@@ -16,6 +17,32 @@ export default function ProductCard({
 }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1);
   const [isFavorited, setIsFavorited] = useState(false);
+  const { user } = useAuth(); // ✅ current logged in user
+
+  const toggleFavorite = async () => {
+    if (!user) {
+      console.warn("User must be logged in to favorite");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/favorites/toggle`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userID: user.id, productID: id }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to toggle favorite");
+
+      const data = await res.json();
+      setIsFavorited(data.favorited);
+    } catch (err) {
+      console.error("❌ Error toggling favorite:", err);
+    }
+  };
 
   return (
     <div className="rounded-2xl shadow-md bg-white dark:bg-gray-800 overflow-hidden hover:shadow-lg transition">
@@ -37,7 +64,7 @@ export default function ProductCard({
           </Link>
         </h3>
 
-        {/* Creator Info (clickable avatar + name) */}
+        {/* Creator Info */}
         <Link
           to={routes.user(creator.id)}
           className="flex items-center gap-2 hover:opacity-80 transition"
@@ -83,7 +110,7 @@ export default function ProductCard({
           </button>
 
           <button
-            onClick={() => setIsFavorited(!isFavorited)}
+            onClick={toggleFavorite}
             className="p-2 rounded-xl border hover:bg-gray-100 dark:hover:bg-gray-700 transition transform hover:scale-110"
             aria-label="Toggle favorite"
           >
