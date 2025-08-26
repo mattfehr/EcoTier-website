@@ -4,6 +4,7 @@ import { Heart, ShoppingCart, Minus, Plus } from "lucide-react";
 import type { Product } from "../../../shared/types/product";
 import { routes } from "../utils/routes";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext"; // ✅ cart context
 
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -12,9 +13,11 @@ export default function ProductPage() {
   const [error, setError] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [isFavorited, setIsFavorited] = useState(false);
+  const [inCart, setInCart] = useState(false);
   const { user } = useAuth();
+  const { setCartCount } = useCart(); // ✅ get cart updater
 
-  // Load product
+  // Load product and preload states
   useEffect(() => {
     if (!id) return;
 
@@ -26,14 +29,24 @@ export default function ProductPage() {
         const data: Product = await res.json();
         setProduct(data);
 
-        // ✅ preload favorite state via /contains endpoint
         if (user) {
+          // ✅ preload favorite
           const favRes = await fetch(
             `${import.meta.env.VITE_API_URL}/api/favorites/${user.id}/contains/${data.id}`
           );
           if (favRes.ok) {
             const { favorited } = await favRes.json();
             setIsFavorited(favorited);
+          }
+
+          // ✅ preload cart
+          const cartRes = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/cart/${user.id}/contains/${data.id}`
+          );
+          if (cartRes.ok) {
+            const { inCart, quantity } = await cartRes.json();
+            setInCart(inCart);
+            if (quantity) setQuantity(quantity);
           }
         }
       } catch (err) {
@@ -64,6 +77,35 @@ export default function ProductPage() {
       setIsFavorited(data.favorited);
     } catch (err) {
       console.error("❌ Error toggling favorite:", err);
+    }
+  };
+
+  // ✅ Toggle cart
+  const toggleCart = async () => {
+    if (!user || !product) return;
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userID: user.id,
+          productID: product.id,
+          quantity,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to toggle cart");
+      const data = await res.json();
+      setInCart(data.inCart);
+      setQuantity(data.quantity || 1);
+
+      // ✅ update global cart count
+      setCartCount((prev) =>
+        data.inCart ? prev + 1 : Math.max(0, prev - 1)
+      );
+    } catch (err) {
+      console.error("❌ Error toggling cart:", err);
     }
   };
 
@@ -130,9 +172,16 @@ export default function ProductPage() {
 
         {/* Actions */}
         <div className="flex gap-4 mt-4">
-          <button className="flex items-center gap-2 px-5 py-3 rounded-xl bg-green-500 text-white hover:bg-green-600">
-            <ShoppingCart size={20} /> Add to Cart
+          <button
+            onClick={toggleCart}
+            className={`flex items-center gap-2 px-5 py-3 rounded-xl text-white transition ${
+              inCart ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
+            }`}
+          >
+            <ShoppingCart size={20} />
+            {inCart ? "Remove" : "Add to Cart"}
           </button>
+
           <button
             onClick={toggleFavorite}
             className="p-3 rounded-xl border hover:bg-gray-100 dark:hover:bg-gray-700 transition transform hover:scale-110"
