@@ -1,83 +1,127 @@
+// src/routes/cartRoute.ts
 import { Router } from "express";
 import { prisma } from "../db/prisma";
 
 const router = Router();
 
-// Add to cart (or increase quantity if already exists)
-router.post("/", async (req, res) => {
-  const { userID, productID, quantity = 1 } = req.body;
+// ✅ Toggle cart item (add or remove)
+router.post("/toggle", async (req, res) => {
   try {
+    let { userID, productID, quantity = 1 } = req.body;
+
+    if (!userID || !productID) {
+      return res
+        .status(400)
+        .json({ error: "userID and productID are required" });
+    }
+
+    productID = Number(productID);
+
     const existing = await prisma.cartItem.findUnique({
       where: {
         userID_productID: { userID, productID },
       },
     });
 
-    let cartItem;
     if (existing) {
-      cartItem = await prisma.cartItem.update({
+      // Remove completely
+      await prisma.cartItem.delete({
         where: {
           userID_productID: { userID, productID },
         },
-        data: { quantity: existing.quantity + quantity },
       });
+      return res.json({ inCart: false, quantity: 0 });
     } else {
-      cartItem = await prisma.cartItem.create({
+      // Add fresh with given quantity (default 1)
+      const created = await prisma.cartItem.create({
         data: { userID, productID, quantity },
       });
+      return res.json({ inCart: true, quantity: created.quantity });
     }
-
-    res.json(cartItem);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to add to cart" });
+    console.error("Error toggling cart:", err);
+    res.status(500).json({ error: "Failed to toggle cart" });
   }
 });
 
-// Update quantity directly
-router.put("/", async (req, res) => {
-  const { userID, productID, quantity } = req.body;
+// ✅ Check if user has a product in their cart
+router.get("/:userID/contains/:productID", async (req, res) => {
   try {
-    const cartItem = await prisma.cartItem.update({
-      where: {
-        userID_productID: { userID, productID },
-      },
-      data: { quantity },
-    });
-    res.json(cartItem);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to update cart item" });
-  }
-});
+    const { userID, productID } = req.params;
 
-// Remove from cart
-router.delete("/", async (req, res) => {
-  const { userID, productID } = req.body;
-  try {
-    await prisma.cartItem.delete({
+    const cartItem = await prisma.cartItem.findUnique({
       where: {
-        userID_productID: { userID, productID },
+        userID_productID: {
+          userID,
+          productID: Number(productID),
+        },
       },
     });
-    res.json({ success: true });
+
+    res.json({
+      inCart: !!cartItem,
+      quantity: cartItem?.quantity ?? 0,
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to remove cart item" });
+    console.error("Error checking cart:", err);
+    res.status(500).json({ error: "Failed to check cart" });
   }
 });
 
-// Get all items in a user's cart
-router.get("/:userID", async (req, res) => {
-  const { userID } = req.params;
+// ✅ Get all product IDs in a user's cart
+router.get("/:userID/ids", async (req, res) => {
   try {
-    const cart = await prisma.cartItem.findMany({
+    const { userID } = req.params;
+
+    const cartItems = await prisma.cartItem.findMany({
       where: { userID },
-      include: { product: true },
+      select: { productID: true },
     });
-    res.json(cart);
+
+    res.json(cartItems.map((c) => c.productID));
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching cart IDs:", err);
+    res.status(500).json({ error: "Failed to fetch cart IDs" });
+  }
+});
+
+// ✅ Get full cart with product objects
+router.get("/:userID", async (req, res) => {
+  try {
+    const { userID } = req.params;
+
+    const cartItems = await prisma.cartItem.findMany({
+      where: { userID },
+      include: {
+        product: {
+          include: {
+            creator: { select: { id: true, username: true, profileImage: true } },
+          },
+        },
+      },
+    });
+
+    // Shape to match Product[] (like favorites does)
+    const shaped = cartItems.map((c) => ({
+      id: c.product.productID,
+      name: c.product.name,
+      price: Number(c.product.price),
+      productType: c.product.productType.toLowerCase(),
+      imageUrl: c.product.imageURL ?? "https://via.placeholder.com/600x400",
+      description: c.product.description ?? "",
+      creator: {
+        id: c.product.creator.id,
+        name: c.product.creator.username,
+        profileImage:
+          c.product.creator.profileImage ??
+          "https://via.placeholder.com/40x40",
+      },
+      quantity: c.quantity,
+    }));
+
+    res.json(shaped);
+  } catch (err) {
+    console.error("Error fetching cart:", err);
     res.status(500).json({ error: "Failed to fetch cart" });
   }
 });

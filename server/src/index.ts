@@ -27,7 +27,7 @@ app.get("/health", (_req, res) => {
 app.use("/api/products", productsRouter);
 app.use("/api/users", userRouter);
 app.use("/api/favorites", favoritesRouter); 
-app.use("/api/cartitems", cartRoutes);
+app.use("/api/cart", cartRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

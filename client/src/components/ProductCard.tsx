@@ -6,7 +6,7 @@ import { routes } from "../utils/routes";
 import { useAuth } from "../context/AuthContext";
 
 type ProductCardProps = Product & {
-  isFavorited?: boolean; // ✅ new optional prop
+  isFavorited?: boolean;
 };
 
 export default function ProductCard({
@@ -16,32 +16,52 @@ export default function ProductCard({
   creator,
   imageUrl,
   productType,
-  isFavorited: initialFavorited, // ✅ from parent if available
+  isFavorited: initialFavorited,
 }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1);
   const [isFavorited, setIsFavorited] = useState(initialFavorited ?? false);
+  const [inCart, setInCart] = useState(false);
   const { user } = useAuth();
 
-  // ✅ Only preload if parent didn’t provide a value
+  // ✅ Load favorite + cart state
   useEffect(() => {
-    if (initialFavorited !== undefined) return;
     if (!user) return;
 
-    const checkFavorite = async () => {
+    // Only preload favorite if parent didn’t provide it
+    if (initialFavorited === undefined) {
+      const checkFavorite = async () => {
+        try {
+          const res = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/favorites/${user.id}/contains/${id}`
+          );
+          if (res.ok) {
+            const { favorited } = await res.json();
+            setIsFavorited(favorited);
+          }
+        } catch (err) {
+          console.error("❌ Error checking favorite:", err);
+        }
+      };
+      checkFavorite();
+    }
+
+    // Check if in cart
+    const checkCart = async () => {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/favorites/${user.id}/contains/${id}`
+          `${import.meta.env.VITE_API_URL}/api/cart/${user.id}/contains/${id}`
         );
         if (res.ok) {
-          const { favorited } = await res.json();
-          setIsFavorited(favorited);
+          const { inCart, quantity } = await res.json();
+          setInCart(inCart);
+          if (quantity) setQuantity(quantity);
         }
       } catch (err) {
-        console.error("❌ Error checking favorite:", err);
+        console.error("❌ Error checking cart:", err);
       }
     };
 
-    checkFavorite();
+    checkCart();
   }, [user, id, initialFavorited]);
 
   // ✅ Toggle favorite
@@ -67,6 +87,37 @@ export default function ProductCard({
       setIsFavorited(data.favorited);
     } catch (err) {
       console.error("❌ Error toggling favorite:", err);
+    }
+  };
+
+  // ✅ Toggle cart (like favorites: add with quantity, or remove)
+  const toggleCart = async () => {
+    if (!user) {
+      console.warn("User must be logged in to use cart");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userID: user.id,
+          productID: Number(id),
+          quantity, // when adding, use the selected quantity
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Failed to toggle cart: ${text}`);
+      }
+
+      const data = await res.json();
+      setInCart(data.inCart);
+      setQuantity(data.quantity || 1);
+    } catch (err) {
+      console.error("❌ Error toggling cart:", err);
     }
   };
 
@@ -131,8 +182,16 @@ export default function ProductCard({
 
         {/* Actions */}
         <div className="flex justify-between mt-2">
-          <button className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-500 text-white hover:bg-green-600">
-            <ShoppingCart size={18} /> Add
+          <button
+            onClick={toggleCart}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-white transition ${
+              inCart
+                ? "bg-red-500 hover:bg-red-600"
+                : "bg-green-500 hover:bg-green-600"
+            }`}
+          >
+            <ShoppingCart size={18} />
+            {inCart ? "Remove" : "Add"}
           </button>
 
           <button
