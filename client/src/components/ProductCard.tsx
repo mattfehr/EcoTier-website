@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import type { Product } from "../../../shared/types/product";
 import { routes } from "../utils/routes";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext"; // ✅ import cart context
 
 type ProductCardProps = Product & {
   isFavorited?: boolean;
@@ -22,6 +23,7 @@ export default function ProductCard({
   const [isFavorited, setIsFavorited] = useState(initialFavorited ?? false);
   const [inCart, setInCart] = useState(false);
   const { user } = useAuth();
+  const { setCartCount } = useCart(); // ✅ use cart context
 
   // ✅ Load favorite + cart state
   useEffect(() => {
@@ -90,7 +92,7 @@ export default function ProductCard({
     }
   };
 
-  // ✅ Toggle cart (like favorites: add with quantity, or remove)
+  // ✅ Toggle cart (update context count too)
   const toggleCart = async () => {
     if (!user) {
       console.warn("User must be logged in to use cart");
@@ -116,6 +118,11 @@ export default function ProductCard({
       const data = await res.json();
       setInCart(data.inCart);
       setQuantity(data.quantity || 1);
+
+      // ✅ Update shared cart count
+      setCartCount((prev) =>
+        data.inCart ? prev + 1 : Math.max(0, prev - 1)
+      );
     } catch (err) {
       console.error("❌ Error toggling cart:", err);
     }
