@@ -16,6 +16,7 @@ export default function UserPage() {
   const [user, setUser] = useState<UserPublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [favoritedIds, setFavoritedIds] = useState<Set<number>>(new Set());
 
   const [mode, setMode] = useState<Mode>("all");
   const [sort, setSort] = useState<"new" | "price">("new");
@@ -49,7 +50,9 @@ export default function UserPage() {
 
     const checkFollowing = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${currentUser.id}/following`);
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/users/${currentUser.id}/following`
+        );
         const data = await res.json();
         const isFollowed = data.some((u: { id: string }) => u.id === id);
         setIsFollowing(isFollowed);
@@ -60,6 +63,29 @@ export default function UserPage() {
 
     checkFollowing();
   }, [id, currentUser]);
+
+  // ✅ Bulk fetch favorites of the *current user* (for red hearts)
+  useEffect(() => {
+    if (!currentUser) {
+      setFavoritedIds(new Set());
+      return;
+    }
+
+    const fetchFavorites = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/favorites/${currentUser.id}/ids`
+        );
+        if (!res.ok) throw new Error("Failed to fetch favorite IDs");
+        const ids: number[] = await res.json();
+        setFavoritedIds(new Set(ids));
+      } catch (err) {
+        console.error("❌ Error loading favorite IDs:", err);
+      }
+    };
+
+    fetchFavorites();
+  }, [currentUser]);
 
   const handleFollowToggle = async () => {
     if (!id || !currentUser) return;
@@ -84,9 +110,10 @@ export default function UserPage() {
   const filteredProducts = useMemo(() => {
     if (!user) return [];
 
-    let filtered = mode === "all"
-      ? user.products || []
-      : (user.products || []).filter((p) => p.productType === mode);
+    let filtered =
+      mode === "all"
+        ? user.products || []
+        : (user.products || []).filter((p) => p.productType === mode);
 
     if (sort === "price") {
       filtered = [...filtered].sort((a, b) =>
@@ -160,7 +187,11 @@ export default function UserPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {filteredProducts.map((p) => (
-                <ProductCard key={p.id} {...p} />
+                <ProductCard
+                  key={p.id}
+                  {...p}
+                  isFavorited={favoritedIds.has(p.id)} // ✅ bulk preload
+                />
               ))}
             </div>
           )}

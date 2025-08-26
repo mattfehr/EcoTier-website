@@ -66,7 +66,24 @@ router.get("/:userID/contains/:productID", async (req, res) => {
   }
 });
 
-// Get all favorites for a user
+// ✅ Get all favorite product IDs for a user (bulk optimization)
+router.get("/:userID/ids", async (req, res) => {
+  try {
+    const { userID } = req.params;
+
+    const favorites = await prisma.favorite.findMany({
+      where: { userID },
+      select: { productID: true },
+    });
+
+    res.json(favorites.map((f) => f.productID));
+  } catch (err) {
+    console.error("Error fetching favorite IDs:", err);
+    res.status(500).json({ error: "Failed to fetch favorite IDs" });
+  }
+});
+
+// Get all favorites for a user (full objects)
 router.get("/:userID", async (req, res) => {
   try {
     const { userID } = req.params;
@@ -104,6 +121,5 @@ router.get("/:userID", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch favorites" });
   }
 });
-
 
 export default router;

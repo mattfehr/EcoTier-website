@@ -5,7 +5,9 @@ import type { Product } from "../../../shared/types/product";
 import { routes } from "../utils/routes";
 import { useAuth } from "../context/AuthContext";
 
-type ProductCardProps = Product;
+type ProductCardProps = Product & {
+  isFavorited?: boolean; // ✅ new optional prop
+};
 
 export default function ProductCard({
   id,
@@ -14,13 +16,15 @@ export default function ProductCard({
   creator,
   imageUrl,
   productType,
+  isFavorited: initialFavorited, // ✅ from parent if available
 }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1);
-  const [isFavorited, setIsFavorited] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(initialFavorited ?? false);
   const { user } = useAuth();
 
-  // ✅ Preload favorite state
+  // ✅ Only preload if parent didn’t provide a value
   useEffect(() => {
+    if (initialFavorited !== undefined) return;
     if (!user) return;
 
     const checkFavorite = async () => {
@@ -38,7 +42,7 @@ export default function ProductCard({
     };
 
     checkFavorite();
-  }, [user, id]);
+  }, [user, id, initialFavorited]);
 
   // ✅ Toggle favorite
   const toggleFavorite = async () => {
