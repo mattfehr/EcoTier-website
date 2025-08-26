@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Heart, ShoppingCart, Minus, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Product } from "../../../shared/types/product";
 import { routes } from "../utils/routes";
-import { useAuth } from "../context/AuthContext"; // ✅ get current user
+import { useAuth } from "../context/AuthContext";
 
 type ProductCardProps = Product;
 
@@ -17,8 +17,30 @@ export default function ProductCard({
 }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1);
   const [isFavorited, setIsFavorited] = useState(false);
-  const { user } = useAuth(); // ✅ current logged in user
+  const { user } = useAuth();
 
+  // ✅ Preload favorite state
+  useEffect(() => {
+    if (!user) return;
+
+    const checkFavorite = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/favorites/${user.id}/contains/${id}`
+        );
+        if (res.ok) {
+          const { favorited } = await res.json();
+          setIsFavorited(favorited);
+        }
+      } catch (err) {
+        console.error("❌ Error checking favorite:", err);
+      }
+    };
+
+    checkFavorite();
+  }, [user, id]);
+
+  // ✅ Toggle favorite
   const toggleFavorite = async () => {
     if (!user) {
       console.warn("User must be logged in to favorite");
