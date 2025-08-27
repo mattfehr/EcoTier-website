@@ -5,7 +5,9 @@ import cors from "cors";
 import productsRouter from "./routes/productsRoutes";
 import userRouter from "./routes/userRoutes";
 import favoritesRouter from "./routes/favoritesRoutes"; 
-import cartRoutes from "./routes/cartRoutes";
+import cartRouter from "./routes/cartRoutes";
+import ordersRouter from "./routes/orderRoutes";
+
 
 dotenv.config();
 const app = express();
@@ -27,7 +29,8 @@ app.get("/health", (_req, res) => {
 app.use("/api/products", productsRouter);
 app.use("/api/users", userRouter);
 app.use("/api/favorites", favoritesRouter); 
-app.use("/api/cart", cartRoutes);
+app.use("/api/cart", cartRouter);
+app.use("/api/orders", ordersRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

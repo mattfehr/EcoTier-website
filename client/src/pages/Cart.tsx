@@ -13,6 +13,11 @@ export default function Cart() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // ✅ Checkout form state
+  const [fullName, setFullName] = useState("");
+  const [address, setAddress] = useState("");
+  const [placing, setPlacing] = useState(false);
+
   // ✅ Fetch cart items
   useEffect(() => {
     if (!user) return;
@@ -45,6 +50,41 @@ export default function Cart() {
   };
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+  // ✅ Place order
+  const placeOrder = async () => {
+    if (!user) return;
+    if (!fullName || !address) {
+      alert("Please enter your full name and address.");
+      return;
+    }
+
+    setPlacing(true);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userID: user.id, fullName, address }),
+      });
+
+      if (!res.ok) throw new Error("Failed to place order");
+
+      const data = await res.json();
+      console.log("✅ Order placed:", data);
+
+      // Reset UI + cart context
+      setItems([]);
+      setCartCount(0);
+      setFullName("");
+      setAddress("");
+      alert("Order placed successfully!");
+    } catch (err) {
+      console.error("❌ Error placing order:", err);
+      alert("Failed to place order.");
+    } finally {
+      setPlacing(false);
+    }
+  };
 
   if (loading) {
     return <div className="p-6">Loading cart...</div>;
@@ -105,15 +145,19 @@ export default function Cart() {
             <input
               type="text"
               placeholder="Full Name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
               className="w-full border p-2 rounded"
             />
             <input
               type="text"
               placeholder="Shipping Address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
               className="w-full border p-2 rounded"
             />
-            
-            {/* Card fields */}
+
+            {/* Card fields (UI only, not stored) */}
             <input
               type="text"
               placeholder="Card Number"
@@ -131,9 +175,13 @@ export default function Cart() {
                 className="w-1/2 border p-2 rounded"
               />
             </div>
-            
-            <button className="w-full py-2 rounded bg-green-500 text-white font-semibold hover:bg-green-600">
-              Place Order
+
+            <button
+              onClick={placeOrder}
+              disabled={placing || items.length === 0}
+              className="w-full py-2 rounded bg-green-500 text-white font-semibold hover:bg-green-600 disabled:opacity-50"
+            >
+              {placing ? "Placing Order..." : "Place Order"}
             </button>
           </div>
         </div>
