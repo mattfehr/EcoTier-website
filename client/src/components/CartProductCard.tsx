@@ -44,26 +44,26 @@ export default function CartProductCard({ item, onQuantityChange, onRemove }: Pr
   };
 
   const removeItem = async () => {
-    if (!user) return;
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/toggle`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userID: user.id,
-          productID: item.id,
-          quantity: 0,
-        }),
-      });
+		if (!user) return;
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/toggle`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					userID: user.id,
+					productID: item.id,
+					quantity: 0,
+				}),
+			});
 
-      if (res.ok) {
-        onRemove(item.id);
-        setCartCount((prev) => Math.max(0, prev - 1));
-      }
-    } catch (err) {
-      console.error("❌ Error removing cart item:", err);
-    }
-  };
+			if (res.ok) {
+				onRemove(item.id); // ✅ parent handles count update
+				// ❌ no setCartCount here
+			}
+		} catch (err) {
+			console.error("❌ Error removing cart item:", err);
+		}
+	};
 
   return (
     <div className="flex items-center justify-between p-4 border rounded-xl shadow-sm bg-white dark:bg-gray-800">
