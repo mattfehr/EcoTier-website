@@ -74,11 +74,14 @@ model Favorite {
 }
 
 model Order {
-  orderNumber  Int      @id @default(autoincrement())
-  customerID   String   @db.Uuid
-  address      String
-  totalPrice   Float
-  purchaseTime DateTime @default(now())
+  orderNumber   Int      @id @default(autoincrement())
+  customerID    String   @db.Uuid
+  fullName      String
+  address       String
+  totalPrice    Float
+  purchaseTime  DateTime @default(now())
+  paymentStatus String   @default("pending") // e.g. "pending", "paid", "failed"
+  transactionID String? // from Stripe/PayPal later
 
   customer   User        @relation("CustomerOrders", fields: [customerID], references: [id])
   orderItems OrderItem[]

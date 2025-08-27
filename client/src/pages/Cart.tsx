@@ -112,11 +112,26 @@ export default function Cart() {
               placeholder="Shipping Address"
               className="w-full border p-2 rounded"
             />
+            
+            {/* Card fields */}
             <input
               type="text"
               placeholder="Card Number"
               className="w-full border p-2 rounded"
             />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="MM/YY"
+                className="w-1/2 border p-2 rounded"
+              />
+              <input
+                type="text"
+                placeholder="CVC"
+                className="w-1/2 border p-2 rounded"
+              />
+            </div>
+            
             <button className="w-full py-2 rounded bg-green-500 text-white font-semibold hover:bg-green-600">
               Place Order
             </button>
