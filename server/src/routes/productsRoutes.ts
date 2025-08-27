@@ -1,3 +1,4 @@
+// src/routes/productsRoute.ts
 import { Router } from "express";
 import { prisma } from "../db/prisma";
 import type { Product } from "@shared/types/product";
@@ -11,12 +12,13 @@ type ProductWithCreator = Prisma.ProductGetPayload<{
   };
 }>;
 
-// GET /products?sort=price&order=asc
+// GET /products?sort=price&order=asc&userID=uuid
 router.get("/", async (req, res) => {
   try {
     const {
       sort = "new",
       order = "desc",
+      userID,
     } = req.query as Record<string, string>;
 
     let orderBy: any = { createTime: order as "asc" | "desc" };
@@ -24,6 +26,14 @@ router.get("/", async (req, res) => {
     if (sort === "updated") orderBy = { updateTime: order as "asc" | "desc" };
 
     const products: ProductWithCreator[] = await prisma.product.findMany({
+      where: userID
+        ? {
+            OR: [
+              { public: true },
+              { creatorID: userID }, // 👈 include creator’s own private products
+            ],
+          }
+        : { public: true }, // 👈 default only public
       include: {
         creator: {
           select: { id: true, username: true, profileImage: true },
@@ -40,7 +50,8 @@ router.get("/", async (req, res) => {
       creator: {
         id: p.creator.id,
         name: p.creator.username,
-        profileImage: p.creator.profileImage ?? "https://via.placeholder.com/40x40",
+        profileImage:
+          p.creator.profileImage ?? "https://via.placeholder.com/40x40",
       },
       imageUrl: p.imageURL ?? "https://via.placeholder.com/600x400",
       description: p.description ?? "",
@@ -53,13 +64,21 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET /products/:id
+// GET /products/:id?userID=uuid
 router.get("/:id", async (req, res) => {
   const id = Number(req.params.id);
+  const { userID } = req.query as { userID?: string };
+
   if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid id" });
 
-  const product = await prisma.product.findUnique({
-    where: { productID: id },
+  const product = await prisma.product.findFirst({
+    where: {
+      productID: id,
+      OR: [
+        { public: true },
+        ...(userID ? [{ creatorID: userID }] : []), // 👈 allow if user owns it
+      ],
+    },
     include: {
       creator: {
         select: { id: true, username: true, profileImage: true },
@@ -79,7 +98,9 @@ router.get("/:id", async (req, res) => {
     creator: {
       id: product.creator.id,
       name: product.creator.username,
-      profileImage: product.creator.profileImage ?? "https://via.placeholder.com/40x40",
+      profileImage:
+        product.creator.profileImage ??
+        "https://via.placeholder.com/40x40",
     },
   };
 
