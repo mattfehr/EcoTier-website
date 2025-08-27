@@ -4,10 +4,11 @@ import { Link } from "react-router-dom";
 import type { Product } from "../../../shared/types/product";
 import { routes } from "../utils/routes";
 import { useAuth } from "../context/AuthContext";
-import { useCart } from "../context/CartContext"; // ✅ import cart context
+import { useCart } from "../context/CartContext";
 
 type ProductCardProps = Product & {
   isFavorited?: boolean;
+  isInCart?: boolean; // ✅ new optional prop
 };
 
 export default function ProductCard({
@@ -18,14 +19,15 @@ export default function ProductCard({
   imageUrl,
   productType,
   isFavorited: initialFavorited,
+  isInCart: initialInCart, // ✅ new prop
 }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1);
   const [isFavorited, setIsFavorited] = useState(initialFavorited ?? false);
-  const [inCart, setInCart] = useState(false);
+  const [inCart, setInCart] = useState(initialInCart ?? false);
   const { user } = useAuth();
-  const { setCartCount } = useCart(); // ✅ use cart context
+  const { setCartCount } = useCart();
 
-  // ✅ Load favorite + cart state
+  // ✅ Load favorite + cart state only if not preloaded
   useEffect(() => {
     if (!user) return;
 
@@ -47,24 +49,25 @@ export default function ProductCard({
       checkFavorite();
     }
 
-    // Check if in cart
-    const checkCart = async () => {
-      try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/cart/${user.id}/contains/${id}`
-        );
-        if (res.ok) {
-          const { inCart, quantity } = await res.json();
-          setInCart(inCart);
-          if (quantity) setQuantity(quantity);
+    // Only preload cart if parent didn’t provide it
+    if (initialInCart === undefined) {
+      const checkCart = async () => {
+        try {
+          const res = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/cart/${user.id}/contains/${id}`
+          );
+          if (res.ok) {
+            const { inCart, quantity } = await res.json();
+            setInCart(inCart);
+            if (quantity) setQuantity(quantity);
+          }
+        } catch (err) {
+          console.error("❌ Error checking cart:", err);
         }
-      } catch (err) {
-        console.error("❌ Error checking cart:", err);
-      }
-    };
-
-    checkCart();
-  }, [user, id, initialFavorited]);
+      };
+      checkCart();
+    }
+  }, [user, id, initialFavorited, initialInCart]);
 
   // ✅ Toggle favorite
   const toggleFavorite = async () => {
@@ -92,7 +95,7 @@ export default function ProductCard({
     }
   };
 
-  // ✅ Toggle cart (update context count too)
+  // ✅ Toggle cart
   const toggleCart = async () => {
     if (!user) {
       console.warn("User must be logged in to use cart");
@@ -106,7 +109,7 @@ export default function ProductCard({
         body: JSON.stringify({
           userID: user.id,
           productID: Number(id),
-          quantity, // when adding, use the selected quantity
+          quantity,
         }),
       });
 

@@ -16,6 +16,7 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [favoritedIds, setFavoritedIds] = useState<Set<number>>(new Set());
+  const [cartIds, setCartIds] = useState<Set<number>>(new Set());
 
   // ✅ Fetch products
   useEffect(() => {
@@ -58,6 +59,29 @@ export default function Shop() {
     };
 
     fetchFavorites();
+  }, [user]);
+
+  // ✅ Bulk fetch cart product IDs (if logged in)
+  useEffect(() => {
+    if (!user) {
+      setCartIds(new Set());
+      return;
+    }
+
+    const fetchCart = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/cart/${user.id}/ids`
+        );
+        if (!res.ok) throw new Error("Failed to fetch cart IDs");
+        const ids: number[] = await res.json();
+        setCartIds(new Set(ids));
+      } catch (err) {
+        console.error("❌ Error loading cart IDs:", err);
+      }
+    };
+
+    fetchCart();
   }, [user]);
 
   // ✅ Apply filter client-side
@@ -103,7 +127,8 @@ export default function Shop() {
             <ProductCard
               key={p.id}
               {...p}
-              isFavorited={favoritedIds.has(p.id)} // ✅ bulk preload
+              isFavorited={favoritedIds.has(p.id)} // ✅ bulk preload favorites
+              isInCart={cartIds.has(p.id)}        // ✅ bulk preload cart
             />
           ))}
         </div>

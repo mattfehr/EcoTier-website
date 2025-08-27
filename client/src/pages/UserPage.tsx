@@ -16,7 +16,9 @@ export default function UserPage() {
   const [user, setUser] = useState<UserPublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
+
   const [favoritedIds, setFavoritedIds] = useState<Set<number>>(new Set());
+  const [cartIds, setCartIds] = useState<Set<number>>(new Set()); // ✅ new for cart preload
 
   const [mode, setMode] = useState<Mode>("all");
   const [sort, setSort] = useState<"new" | "price">("new");
@@ -85,6 +87,29 @@ export default function UserPage() {
     };
 
     fetchFavorites();
+  }, [currentUser]);
+
+  // ✅ Bulk fetch cart product IDs (for cart preload)
+  useEffect(() => {
+    if (!currentUser) {
+      setCartIds(new Set());
+      return;
+    }
+
+    const fetchCart = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/cart/${currentUser.id}/ids`
+        );
+        if (!res.ok) throw new Error("Failed to fetch cart IDs");
+        const ids: number[] = await res.json();
+        setCartIds(new Set(ids));
+      } catch (err) {
+        console.error("❌ Error loading cart IDs:", err);
+      }
+    };
+
+    fetchCart();
   }, [currentUser]);
 
   const handleFollowToggle = async () => {
@@ -190,7 +215,8 @@ export default function UserPage() {
                 <ProductCard
                   key={p.id}
                   {...p}
-                  isFavorited={favoritedIds.has(p.id)} // ✅ bulk preload
+                  isFavorited={favoritedIds.has(p.id)} // ✅ bulk preload favorites
+                  isInCart={cartIds.has(p.id)}        // ✅ bulk preload cart
                 />
               ))}
             </div>
