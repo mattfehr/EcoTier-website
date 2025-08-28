@@ -168,7 +168,8 @@ router.post("/", async (req, res) => {
 // ========== UPDATE PRODUCT ==========
 router.put("/:id", async (req, res) => {
   try {
-    const { userID, ...updates } = req.body;
+    const { userID, name, price, productType, description, imageURL, public: isPublic, PIN } =
+      req.body;
     if (!userID) return res.status(401).json({ error: "Missing userID" });
 
     const id = Number(req.params.id);
@@ -181,8 +182,13 @@ router.put("/:id", async (req, res) => {
     const updated = await prisma.product.update({
       where: { productID: id },
       data: {
-        ...updates,
-        price: updates.price != null ? Number(updates.price) : undefined,
+        ...(name !== undefined && { name }),
+        ...(price !== undefined && { price: Number(price) }),
+        ...(productType !== undefined && { productType }),
+        ...(description !== undefined && { description }),
+        ...(imageURL !== undefined && { imageURL }),
+        ...(isPublic !== undefined && { public: isPublic }),
+        ...(PIN !== undefined && { PIN }),
       },
     });
 
@@ -192,5 +198,3 @@ router.put("/:id", async (req, res) => {
     res.status(500).json({ error: "Failed to update product" });
   }
 });
-
-export default router;

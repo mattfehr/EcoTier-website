@@ -10,16 +10,25 @@ export default function EditorPage() {
   const navigate = useNavigate();
   const isNew = !id || id === "new";
 
-  const { user } = useAuth(); // 👈 grab logged-in user
+  const { user } = useAuth(); // 👈 logged-in user
 
-  const [form, setForm] = useState<Partial<Product>>({
+  const [form, setForm] = useState<{
+    name?: string;
+    price?: number;
+    productType?: ProductType;
+    public?: boolean;
+    description?: string;
+    imageURL?: string;
+    PIN?: string;
+  }>({
     name: "",
     price: 0,
-    productType: "modules" as ProductType,
+    productType: "modules",
     public: false,
     description: "",
     imageURL: "",
   });
+
   const [loading, setLoading] = useState(!isNew);
 
   // Load existing product if editing
@@ -28,10 +37,22 @@ export default function EditorPage() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}?userID=${user?.id ?? ""}`);
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/products/${id}?userID=${user?.id ?? ""}`
+        );
         if (!res.ok) throw new Error("Failed to load product");
         const p: Product = await res.json();
-        setForm(p);
+
+        // ✅ Only keep editable fields
+        setForm({
+          name: p.name,
+          price: p.price,
+          productType: p.productType,
+          description: p.description,
+          imageURL: p.imageURL,
+          public: p.public,
+          PIN: p.PIN,
+        });
       } catch (e) {
         console.error(e);
         alert("Failed to load product.");
@@ -98,15 +119,24 @@ export default function EditorPage() {
       />
       <input
         type="number"
+        inputMode="decimal"
         className="w-full border p-2 rounded"
         placeholder="Price"
-        value={form.price ?? 0}
-        onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+        min={0}
+        value={form.price ?? ""}
+        onChange={(e) =>
+          setForm({
+            ...form,
+            price: e.target.value === "" ? undefined : parseFloat(e.target.value),
+          })
+        }
       />
       <select
         className="w-full border p-2 rounded"
         value={form.productType ?? "modules"}
-        onChange={(e) => setForm({ ...form, productType: e.target.value as ProductType })}
+        onChange={(e) =>
+          setForm({ ...form, productType: e.target.value as ProductType })
+        }
       >
         <option value="towers">towers</option>
         <option value="modules">modules</option>
