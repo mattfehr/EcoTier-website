@@ -13,6 +13,8 @@ type ProductWithCreator = Prisma.ProductGetPayload<{
 }>;
 
 // ========== SHOP PRODUCTS ==========
+// GET /products?sort=price&order=asc
+// Always returns public products
 router.get("/", async (req, res) => {
   try {
     const { sort = "new", order = "desc" } = req.query as Record<string, string>;
@@ -56,6 +58,8 @@ router.get("/", async (req, res) => {
 });
 
 // ========== USER LIBRARY ==========
+// GET /products/library/:userID
+// Returns ALL products by this user (public + private)
 router.get("/library/:userID", async (req, res) => {
   try {
     const { userID } = req.params;
@@ -95,6 +99,7 @@ router.get("/library/:userID", async (req, res) => {
 });
 
 // ========== INDIVIDUAL PRODUCT ==========
+// GET /products/:id?userID=uuid
 router.get("/:id", async (req, res) => {
   const id = Number(req.params.id);
   const { userID } = req.query as { userID?: string };
@@ -106,7 +111,7 @@ router.get("/:id", async (req, res) => {
       productID: id,
       OR: [
         { public: true },
-        ...(userID ? [{ creatorID: userID }] : []),
+        ...(userID ? [{ creatorID: userID }] : []), // allow if user owns it
       ],
     },
     include: {
@@ -139,9 +144,11 @@ router.get("/:id", async (req, res) => {
 });
 
 // ========== CREATE PRODUCT ==========
+// POST /products
 router.post("/", async (req, res) => {
   try {
-    const { userID, name, productType, price, ...rest } = req.body;
+    const { userID, name, productType, price, description, imageURL, public: isPublic, PIN } =
+      req.body;
 
     if (!userID) return res.status(401).json({ error: "Missing userID" });
     if (!name || !productType || price == null) {
@@ -153,8 +160,11 @@ router.post("/", async (req, res) => {
         name,
         productType,
         price: Number(price),
+        description,
+        imageURL,
+        public: isPublic ?? false,
+        PIN,
         creatorID: userID,
-        ...rest,
       },
     });
 
@@ -166,6 +176,7 @@ router.post("/", async (req, res) => {
 });
 
 // ========== UPDATE PRODUCT ==========
+// PUT /products/:id
 router.put("/:id", async (req, res) => {
   try {
     const { userID, name, price, productType, description, imageURL, public: isPublic, PIN } =
@@ -198,3 +209,5 @@ router.put("/:id", async (req, res) => {
     res.status(500).json({ error: "Failed to update product" });
   }
 });
+
+export default router;
