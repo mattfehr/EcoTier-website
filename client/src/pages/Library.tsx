@@ -41,7 +41,7 @@ export default function Library() {
     if (!confirm("Are you sure you want to delete this product?")) return;
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/products/${productID}`,
+        `${import.meta.env.VITE_API_URL}/api/products/${productID}?userID=${user.id}`,
         { method: "DELETE" }
       );
       if (!res.ok) throw new Error("Failed to delete product");
