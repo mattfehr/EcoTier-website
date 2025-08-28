@@ -13,8 +13,6 @@ type ProductWithCreator = Prisma.ProductGetPayload<{
 }>;
 
 // ========== SHOP PRODUCTS ==========
-// GET /products?sort=price&order=asc
-// Always returns public products
 router.get("/", async (req, res) => {
   try {
     const { sort = "new", order = "desc" } = req.query as Record<string, string>;
@@ -58,8 +56,6 @@ router.get("/", async (req, res) => {
 });
 
 // ========== USER LIBRARY ==========
-// GET /products/library/:userID
-// Returns ALL products by this user (public + private)
 router.get("/library/:userID", async (req, res) => {
   try {
     const { userID } = req.params;
@@ -99,7 +95,6 @@ router.get("/library/:userID", async (req, res) => {
 });
 
 // ========== INDIVIDUAL PRODUCT ==========
-// GET /products/:id?userID=uuid
 router.get("/:id", async (req, res) => {
   const id = Number(req.params.id);
   const { userID } = req.query as { userID?: string };
@@ -111,7 +106,7 @@ router.get("/:id", async (req, res) => {
       productID: id,
       OR: [
         { public: true },
-        ...(userID ? [{ creatorID: userID }] : []), // allow if user owns it
+        ...(userID ? [{ creatorID: userID }] : []),
       ],
     },
     include: {
@@ -141,6 +136,61 @@ router.get("/:id", async (req, res) => {
   };
 
   res.json(shaped);
+});
+
+// ========== CREATE PRODUCT ==========
+router.post("/", async (req, res) => {
+  try {
+    const { userID, name, productType, price, ...rest } = req.body;
+
+    if (!userID) return res.status(401).json({ error: "Missing userID" });
+    if (!name || !productType || price == null) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const product = await prisma.product.create({
+      data: {
+        name,
+        productType,
+        price: Number(price),
+        creatorID: userID,
+        ...rest,
+      },
+    });
+
+    res.status(201).json(product);
+  } catch (err) {
+    console.error("POST /products error:", err);
+    res.status(500).json({ error: "Failed to create product" });
+  }
+});
+
+// ========== UPDATE PRODUCT ==========
+router.put("/:id", async (req, res) => {
+  try {
+    const { userID, ...updates } = req.body;
+    if (!userID) return res.status(401).json({ error: "Missing userID" });
+
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid id" });
+
+    const existing = await prisma.product.findUnique({ where: { productID: id } });
+    if (!existing) return res.status(404).json({ error: "Product not found" });
+    if (existing.creatorID !== userID) return res.status(403).json({ error: "Forbidden" });
+
+    const updated = await prisma.product.update({
+      where: { productID: id },
+      data: {
+        ...updates,
+        price: updates.price != null ? Number(updates.price) : undefined,
+      },
+    });
+
+    res.json(updated);
+  } catch (err) {
+    console.error("PUT /products/:id error:", err);
+    res.status(500).json({ error: "Failed to update product" });
+  }
 });
 
 export default router;
