@@ -66,7 +66,7 @@ router.get("/:userID/contains/:productID", async (req, res) => {
   }
 });
 
-// ✅ Get all favorite product IDs for a user (bulk optimization)
+// ✅ Get all favorite product IDs for a user
 router.get("/:userID/ids", async (req, res) => {
   try {
     const { userID } = req.params;
@@ -83,7 +83,7 @@ router.get("/:userID/ids", async (req, res) => {
   }
 });
 
-// Get all favorites for a user (full objects)
+// Get all favorites for a user (full Product objects)
 router.get("/:userID", async (req, res) => {
   try {
     const { userID } = req.params;
@@ -100,15 +100,20 @@ router.get("/:userID", async (req, res) => {
     });
 
     const shaped: Product[] = favorites.map((f) => ({
-      id: f.product.productID,
+      productID: f.product.productID,
       name: f.product.name,
       price: Number(f.product.price),
       productType: f.product.productType.toLowerCase() as Product["productType"],
-      imageUrl: f.product.imageURL ?? "https://via.placeholder.com/600x400",
+      imageURL: f.product.imageURL ?? "https://via.placeholder.com/600x400",
       description: f.product.description ?? "",
+      public: f.product.public,
+      createTime: f.product.createTime.toISOString(),
+      updateTime: f.product.updateTime.toISOString(),
+      PIN: f.product.PIN ?? undefined,
+      creatorID: f.product.creatorID,
       creator: {
         id: f.product.creator.id,
-        name: f.product.creator.username,
+        username: f.product.creator.username,
         profileImage:
           f.product.creator.profileImage ??
           "https://via.placeholder.com/40x40",

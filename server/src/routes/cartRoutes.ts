@@ -1,6 +1,7 @@
 // src/routes/cartRoute.ts
 import { Router } from "express";
 import { prisma } from "../db/prisma";
+import type { Product } from "@shared/types/product";
 
 const router = Router();
 
@@ -24,7 +25,6 @@ router.post("/toggle", async (req, res) => {
     });
 
     if (existing) {
-      // Remove completely
       await prisma.cartItem.delete({
         where: {
           userID_productID: { userID, productID },
@@ -32,7 +32,6 @@ router.post("/toggle", async (req, res) => {
       });
       return res.json({ inCart: false, quantity: 0 });
     } else {
-      // Add fresh with given quantity (default 1)
       const created = await prisma.cartItem.create({
         data: { userID, productID, quantity },
       });
@@ -101,17 +100,21 @@ router.get("/:userID", async (req, res) => {
       },
     });
 
-    // Shape to match Product[] (like favorites does)
     const shaped = cartItems.map((c) => ({
-      id: c.product.productID,
+      productID: c.product.productID,
       name: c.product.name,
       price: Number(c.product.price),
-      productType: c.product.productType.toLowerCase(),
-      imageUrl: c.product.imageURL ?? "https://via.placeholder.com/600x400",
+      productType: c.product.productType.toLowerCase() as Product["productType"],
+      imageURL: c.product.imageURL ?? "https://via.placeholder.com/600x400",
       description: c.product.description ?? "",
+      public: c.product.public,
+      createTime: c.product.createTime.toISOString(),
+      updateTime: c.product.updateTime.toISOString(),
+      PIN: c.product.PIN ?? undefined,
+      creatorID: c.product.creatorID,
       creator: {
         id: c.product.creator.id,
-        name: c.product.creator.username,
+        username: c.product.creator.username,
         profileImage:
           c.product.creator.profileImage ??
           "https://via.placeholder.com/40x40",

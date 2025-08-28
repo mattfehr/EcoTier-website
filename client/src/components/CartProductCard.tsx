@@ -24,7 +24,7 @@ export default function CartProductCard({ item, onQuantityChange, onRemove }: Pr
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userID: user.id,
-          productID: item.id,
+          productID: item.productID,
           quantity: delta,
         }),
       });
@@ -32,10 +32,10 @@ export default function CartProductCard({ item, onQuantityChange, onRemove }: Pr
       if (res.ok) {
         const data = await res.json();
         if (!data.inCart) {
-          onRemove(item.id);
+          onRemove(item.productID);
           setCartCount((prev) => Math.max(0, prev - 1));
         } else {
-          onQuantityChange(item.id, data.quantity);
+          onQuantityChange(item.productID, data.quantity);
         }
       }
     } catch (err) {
@@ -44,32 +44,31 @@ export default function CartProductCard({ item, onQuantityChange, onRemove }: Pr
   };
 
   const removeItem = async () => {
-		if (!user) return;
-		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/toggle`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					userID: user.id,
-					productID: item.id,
-					quantity: 0,
-				}),
-			});
+    if (!user) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userID: user.id,
+          productID: item.productID,
+          quantity: 0,
+        }),
+      });
 
-			if (res.ok) {
-				onRemove(item.id); // ✅ parent handles count update
-				// ❌ no setCartCount here
-			}
-		} catch (err) {
-			console.error("❌ Error removing cart item:", err);
-		}
-	};
+      if (res.ok) {
+        onRemove(item.productID); // ✅ parent handles count update
+      }
+    } catch (err) {
+      console.error("❌ Error removing cart item:", err);
+    }
+  };
 
   return (
     <div className="flex items-center justify-between p-4 border rounded-xl shadow-sm bg-white dark:bg-gray-800">
       <div className="flex items-center gap-4">
         <img
-          src={item.imageUrl}
+          src={item.imageURL || "/placeholder.png"}
           alt={item.name}
           className="w-20 h-20 object-cover rounded-lg"
         />

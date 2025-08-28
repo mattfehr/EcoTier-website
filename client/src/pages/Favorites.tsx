@@ -53,9 +53,9 @@ export default function Favorites() {
         order === "asc" ? a.price - b.price : b.price - a.price
       );
     } else {
-      // "new" — using id as a proxy for recency like your Shop page
+      // "new" — use productID as proxy for recency
       list = [...list].sort((a, b) =>
-        order === "asc" ? a.id - b.id : b.id - a.id
+        order === "asc" ? a.productID - b.productID : b.productID - a.productID
       );
     }
     return list;
@@ -96,7 +96,7 @@ export default function Favorites() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {filtered.map((p) => (
-              <ProductCard key={p.id} {...p} isFavorited={true} /> 
+              <ProductCard key={p.productID} {...p} isFavorited={true} />
             ))}
           </div>
         )}

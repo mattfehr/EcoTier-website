@@ -13,12 +13,10 @@ export default function Cart() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Checkout form state
   const [fullName, setFullName] = useState("");
   const [address, setAddress] = useState("");
   const [placing, setPlacing] = useState(false);
 
-  // ✅ Fetch cart items
   useEffect(() => {
     if (!user) return;
     (async () => {
@@ -36,22 +34,21 @@ export default function Cart() {
     })();
   }, [user]);
 
-  // ✅ Update quantity
   const handleQuantityChange = (productID: number, newQuantity: number) => {
     setItems((prev) =>
-      prev.map((i) => (i.id === productID ? { ...i, quantity: newQuantity } : i))
+      prev.map((i) =>
+        i.productID === productID ? { ...i, quantity: newQuantity } : i
+      )
     );
   };
 
-  // ✅ Remove item
   const handleRemove = (productID: number) => {
-    setItems((prev) => prev.filter((i) => i.id !== productID));
+    setItems((prev) => prev.filter((i) => i.productID !== productID));
     setCartCount((prev) => Math.max(0, prev - 1));
   };
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
-  // ✅ Place order
   const placeOrder = async () => {
     if (!user) return;
     if (!fullName || !address) {
@@ -72,7 +69,6 @@ export default function Cart() {
       const data = await res.json();
       console.log("✅ Order placed:", data);
 
-      // Reset UI + cart context
       setItems([]);
       setCartCount(0);
       setFullName("");
@@ -92,7 +88,6 @@ export default function Cart() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold">Shopping Cart</h1>
         <p className="mt-2 text-gray-600">
@@ -101,14 +96,14 @@ export default function Cart() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Section 1: Cart Items */}
+        {/* Cart Items */}
         <div className="lg:col-span-2 space-y-4">
           {items.length === 0 ? (
             <p className="text-gray-500">Your cart is empty.</p>
           ) : (
             items.map((item) => (
               <CartProductCard
-                key={item.id}
+                key={item.productID}
                 item={item}
                 onQuantityChange={handleQuantityChange}
                 onRemove={handleRemove}
@@ -117,14 +112,13 @@ export default function Cart() {
           )}
         </div>
 
-        {/* Section 2 + 3: Receipt + Order Form */}
+        {/* Receipt + Checkout */}
         <div className="space-y-6">
-          {/* Receipt */}
           <div className="p-4 border rounded-xl bg-gray-50 dark:bg-gray-900">
             <h2 className="font-bold text-lg mb-3">Receipt</h2>
             <ul className="space-y-2">
               {items.map((i) => (
-                <li key={i.id} className="flex justify-between">
+                <li key={i.productID} className="flex justify-between">
                   <span>
                     {i.quantity} × {i.name}
                   </span>
@@ -139,7 +133,6 @@ export default function Cart() {
             </div>
           </div>
 
-          {/* Checkout Form */}
           <div className="p-4 border rounded-xl bg-white dark:bg-gray-800 shadow-sm space-y-4">
             <h2 className="font-bold text-lg">Checkout</h2>
             <input
@@ -156,8 +149,6 @@ export default function Cart() {
               onChange={(e) => setAddress(e.target.value)}
               className="w-full border p-2 rounded"
             />
-
-            {/* Card fields (UI only, not stored) */}
             <input
               type="text"
               placeholder="Card Number"

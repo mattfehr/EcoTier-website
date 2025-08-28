@@ -44,11 +44,15 @@ export interface CartItem {
 
 export interface Order {
   orderNumber: number;
+  fullName: string;          // ✅ add
   address: string;
   totalPrice: number;
   purchaseTime: string;
+  paymentStatus: string;     // ✅ add
+  transactionID?: string;    // ✅ add
   orderItems: OrderItem[];
 }
+
 
 export interface OrderItem {
   productID: number;

@@ -18,7 +18,7 @@ export default function UserPage() {
   const [isFollowing, setIsFollowing] = useState(false);
 
   const [favoritedIds, setFavoritedIds] = useState<Set<number>>(new Set());
-  const [cartIds, setCartIds] = useState<Set<number>>(new Set()); // ✅ new for cart preload
+  const [cartIds, setCartIds] = useState<Set<number>>(new Set());
 
   const [mode, setMode] = useState<Mode>("all");
   const [sort, setSort] = useState<"new" | "price">("new");
@@ -46,7 +46,7 @@ export default function UserPage() {
     fetchUser();
   }, [id]);
 
-  // Check if current user is following this profile
+  // Check follow status
   useEffect(() => {
     if (!id || !currentUser) return;
 
@@ -66,7 +66,7 @@ export default function UserPage() {
     checkFollowing();
   }, [id, currentUser]);
 
-  // ✅ Bulk fetch favorites of the *current user* (for red hearts)
+  // Bulk fetch favorites
   useEffect(() => {
     if (!currentUser) {
       setFavoritedIds(new Set());
@@ -89,7 +89,7 @@ export default function UserPage() {
     fetchFavorites();
   }, [currentUser]);
 
-  // ✅ Bulk fetch cart product IDs (for cart preload)
+  // Bulk fetch cart IDs
   useEffect(() => {
     if (!currentUser) {
       setCartIds(new Set());
@@ -146,7 +146,7 @@ export default function UserPage() {
       );
     } else {
       filtered = [...filtered].sort((a, b) =>
-        order === "asc" ? a.id - b.id : b.id - a.id
+        order === "asc" ? a.productID - b.productID : b.productID - a.productID
       );
     }
 
@@ -213,10 +213,10 @@ export default function UserPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {filteredProducts.map((p) => (
                 <ProductCard
-                  key={p.id}
+                  key={p.productID}
                   {...p}
-                  isFavorited={favoritedIds.has(p.id)} // ✅ bulk preload favorites
-                  isInCart={cartIds.has(p.id)}        // ✅ bulk preload cart
+                  isFavorited={favoritedIds.has(p.productID)}
+                  isInCart={cartIds.has(p.productID)}
                 />
               ))}
             </div>

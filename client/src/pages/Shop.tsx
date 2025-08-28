@@ -38,7 +38,7 @@ export default function Shop() {
     })();
   }, [sort, order]);
 
-  // ✅ Bulk fetch favorited product IDs (if logged in)
+  // ✅ Bulk fetch favorited product IDs
   useEffect(() => {
     if (!user) {
       setFavoritedIds(new Set());
@@ -61,7 +61,7 @@ export default function Shop() {
     fetchFavorites();
   }, [user]);
 
-  // ✅ Bulk fetch cart product IDs (if logged in)
+  // ✅ Bulk fetch cart product IDs
   useEffect(() => {
     if (!user) {
       setCartIds(new Set());
@@ -93,7 +93,6 @@ export default function Shop() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold">Shop Products</h1>
         <p className="mt-2 text-gray-600 dark:text-gray-300">
@@ -101,7 +100,6 @@ export default function Shop() {
         </p>
       </div>
 
-      {/* Filter + Sort */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <ShopFilter mode={mode} onChange={setMode} />
         <ShopSort
@@ -114,7 +112,6 @@ export default function Shop() {
         />
       </div>
 
-      {/* Results */}
       {loading ? (
         <div className="text-center py-10 text-gray-500 dark:text-gray-400">
           Loading products...
@@ -125,10 +122,10 @@ export default function Shop() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {filtered.map((p) => (
             <ProductCard
-              key={p.id}
+              key={p.productID}
               {...p}
-              isFavorited={favoritedIds.has(p.id)} // ✅ bulk preload favorites
-              isInCart={cartIds.has(p.id)}        // ✅ bulk preload cart
+              isFavorited={favoritedIds.has(p.productID)}
+              isInCart={cartIds.has(p.productID)}
             />
           ))}
         </div>

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../db/prisma";
 import type { UserPublicProfile } from "@shared/types/user";
+import type { Product } from "@shared/types/product";
 import type { Prisma } from "@prisma/client";
 
 const router = Router();
@@ -55,32 +56,42 @@ router.get("/:id", async (req, res) => {
       profileImage: user.profileImage ?? "https://via.placeholder.com/40x40",
       bio: user.bio ?? "",
 
-      products: user.products.map((p) => ({
-        id: p.productID,
+      products: user.products.map<Product>((p) => ({
+        productID: p.productID,
         name: p.name,
         price: Number(p.price),
-        productType: p.productType.toLowerCase() as any,
-        imageUrl: p.imageURL ?? "https://via.placeholder.com/600x400",
+        productType: p.productType.toLowerCase() as Product["productType"],
+        imageURL: p.imageURL ?? "https://via.placeholder.com/600x400",
         description: p.description ?? "",
+        public: p.public,
+        createTime: p.createTime.toISOString(),
+        updateTime: p.updateTime.toISOString(),
+        PIN: p.PIN ?? undefined,
+        creatorID: p.creatorID,
         creator: {
           id: user.id,
-          name: user.username,
+          username: user.username,
           profileImage: user.profileImage ?? "https://via.placeholder.com/40x40",
         },
       })),
 
-      favorites: user.favorites.map((f) => {
+      favorites: user.favorites.map<Product>((f) => {
         const p = f.product;
         return {
-          id: p.productID,
+          productID: p.productID,
           name: p.name,
           price: Number(p.price),
-          productType: p.productType.toLowerCase() as any,
-          imageUrl: p.imageURL ?? "https://via.placeholder.com/600x400",
+          productType: p.productType.toLowerCase() as Product["productType"],
+          imageURL: p.imageURL ?? "https://via.placeholder.com/600x400",
           description: p.description ?? "",
+          public: p.public,
+          createTime: p.createTime.toISOString(),
+          updateTime: p.updateTime.toISOString(),
+          PIN: p.PIN ?? undefined,
+          creatorID: p.creatorID,
           creator: {
             id: p.creator.id,
-            name: p.creator.username,
+            username: p.creator.username,
             profileImage: p.creator.profileImage ?? "https://via.placeholder.com/40x40",
           },
         };

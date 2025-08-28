@@ -30,10 +30,10 @@ router.get("/", async (req, res) => {
         ? {
             OR: [
               { public: true },
-              { creatorID: userID }, // 👈 include creator’s own private products
+              { creatorID: userID }, // include creator’s private products
             ],
           }
-        : { public: true }, // 👈 default only public
+        : { public: true }, // default: only public
       include: {
         creator: {
           select: { id: true, username: true, profileImage: true },
@@ -43,18 +43,22 @@ router.get("/", async (req, res) => {
     });
 
     const shaped: Product[] = products.map((p) => ({
-      id: p.productID,
+      productID: p.productID,
       name: p.name,
       price: Number(p.price),
       productType: p.productType.toLowerCase() as Product["productType"],
+      creatorID: p.creatorID,
       creator: {
         id: p.creator.id,
-        name: p.creator.username,
-        profileImage:
-          p.creator.profileImage ?? "https://via.placeholder.com/40x40",
+        username: p.creator.username,
+        profileImage: p.creator.profileImage ?? "https://via.placeholder.com/40x40",
       },
-      imageUrl: p.imageURL ?? "https://via.placeholder.com/600x400",
+      imageURL: p.imageURL ?? "https://via.placeholder.com/600x400",
       description: p.description ?? "",
+      public: p.public,
+      createTime: p.createTime.toISOString(),
+      updateTime: p.updateTime.toISOString(),
+      PIN: p.PIN ?? undefined,
     }));
 
     res.json(shaped);
@@ -76,7 +80,7 @@ router.get("/:id", async (req, res) => {
       productID: id,
       OR: [
         { public: true },
-        ...(userID ? [{ creatorID: userID }] : []), // 👈 allow if user owns it
+        ...(userID ? [{ creatorID: userID }] : []), // allow if user owns it
       ],
     },
     include: {
@@ -89,19 +93,22 @@ router.get("/:id", async (req, res) => {
   if (!product) return res.status(404).json({ error: "Not found" });
 
   const shaped: Product = {
-    id: product.productID,
+    productID: product.productID,
     name: product.name,
     price: Number(product.price),
     productType: product.productType.toLowerCase() as Product["productType"],
-    imageUrl: product.imageURL ?? "https://via.placeholder.com/600x400",
-    description: product.description ?? "",
+    creatorID: product.creatorID,
     creator: {
       id: product.creator.id,
-      name: product.creator.username,
-      profileImage:
-        product.creator.profileImage ??
-        "https://via.placeholder.com/40x40",
+      username: product.creator.username,
+      profileImage: product.creator.profileImage ?? "https://via.placeholder.com/40x40",
     },
+    imageURL: product.imageURL ?? "https://via.placeholder.com/600x400",
+    description: product.description ?? "",
+    public: product.public,
+    createTime: product.createTime.toISOString(),
+    updateTime: product.updateTime.toISOString(),
+    PIN: product.PIN ?? undefined,
   };
 
   res.json(shaped);

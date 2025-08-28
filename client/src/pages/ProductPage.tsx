@@ -4,7 +4,7 @@ import { Heart, ShoppingCart, Minus, Plus } from "lucide-react";
 import type { Product } from "../../../shared/types/product";
 import { routes } from "../utils/routes";
 import { useAuth } from "../context/AuthContext";
-import { useCart } from "../context/CartContext"; // ✅ cart context
+import { useCart } from "../context/CartContext";
 
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,9 +15,8 @@ export default function ProductPage() {
   const [isFavorited, setIsFavorited] = useState(false);
   const [inCart, setInCart] = useState(false);
   const { user } = useAuth();
-  const { setCartCount } = useCart(); // ✅ get cart updater
+  const { setCartCount } = useCart();
 
-  // Load product and preload states
   useEffect(() => {
     if (!id) return;
 
@@ -30,18 +29,18 @@ export default function ProductPage() {
         setProduct(data);
 
         if (user) {
-          // ✅ preload favorite
+          // preload favorite
           const favRes = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/favorites/${user.id}/contains/${data.id}`
+            `${import.meta.env.VITE_API_URL}/api/favorites/${user.id}/contains/${data.productID}`
           );
           if (favRes.ok) {
             const { favorited } = await favRes.json();
             setIsFavorited(favorited);
           }
 
-          // ✅ preload cart
+          // preload cart
           const cartRes = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/cart/${user.id}/contains/${data.id}`
+            `${import.meta.env.VITE_API_URL}/api/cart/${user.id}/contains/${data.productID}`
           );
           if (cartRes.ok) {
             const { inCart, quantity } = await cartRes.json();
@@ -58,7 +57,6 @@ export default function ProductPage() {
     })();
   }, [id, user]);
 
-  // Toggle favorite
   const toggleFavorite = async () => {
     if (!user || !product) return;
 
@@ -68,7 +66,7 @@ export default function ProductPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userID: user.id, productID: product.id }),
+          body: JSON.stringify({ userID: user.id, productID: product.productID }),
         }
       );
 
@@ -80,7 +78,6 @@ export default function ProductPage() {
     }
   };
 
-  // ✅ Toggle cart
   const toggleCart = async () => {
     if (!user || !product) return;
 
@@ -90,7 +87,7 @@ export default function ProductPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userID: user.id,
-          productID: product.id,
+          productID: product.productID,
           quantity,
         }),
       });
@@ -100,7 +97,6 @@ export default function ProductPage() {
       setInCart(data.inCart);
       setQuantity(data.quantity || 1);
 
-      // ✅ update global cart count
       setCartCount((prev) =>
         data.inCart ? prev + 1 : Math.max(0, prev - 1)
       );
@@ -121,7 +117,7 @@ export default function ProductPage() {
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       {/* Image */}
       <img
-        src={product.imageUrl}
+        src={product.imageURL || "/placeholder.png"}
         alt={product.name}
         className="w-full h-80 object-cover rounded-xl shadow-md"
       />
@@ -133,19 +129,21 @@ export default function ProductPage() {
         </h1>
 
         {/* Creator */}
-        <Link
-          to={routes.user(product.creator.id)}
-          className="flex items-center gap-2 hover:opacity-80 transition"
-        >
-          <img
-            src={product.creator.profileImage}
-            alt={product.creator.name}
-            className="w-10 h-10 rounded-full object-cover"
-          />
-          <p className="text-gray-700 dark:text-gray-300">
-            {product.creator.name}
-          </p>
-        </Link>
+        {product.creator && (
+          <Link
+            to={routes.user(product.creator.id)}
+            className="flex items-center gap-2 hover:opacity-80 transition"
+          >
+            <img
+              src={product.creator.profileImage || "/default-avatar.png"}
+              alt={product.creator.username}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+            <p className="text-gray-700 dark:text-gray-300">
+              {product.creator.username}
+            </p>
+          </Link>
+        )}
 
         {/* Price + Quantity */}
         <div className="flex items-center gap-6">

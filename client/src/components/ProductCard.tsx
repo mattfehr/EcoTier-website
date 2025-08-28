@@ -8,18 +8,18 @@ import { useCart } from "../context/CartContext";
 
 type ProductCardProps = Product & {
   isFavorited?: boolean;
-  isInCart?: boolean; // ✅ new optional prop
+  isInCart?: boolean;
 };
 
 export default function ProductCard({
-  id,
+  productID,
   name,
   price,
   creator,
-  imageUrl,
+  imageURL,
   productType,
   isFavorited: initialFavorited,
-  isInCart: initialInCart, // ✅ new prop
+  isInCart: initialInCart,
 }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1);
   const [isFavorited, setIsFavorited] = useState(initialFavorited ?? false);
@@ -27,16 +27,14 @@ export default function ProductCard({
   const { user } = useAuth();
   const { setCartCount } = useCart();
 
-  // ✅ Load favorite + cart state only if not preloaded
   useEffect(() => {
     if (!user) return;
 
-    // Only preload favorite if parent didn’t provide it
     if (initialFavorited === undefined) {
       const checkFavorite = async () => {
         try {
           const res = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/favorites/${user.id}/contains/${id}`
+            `${import.meta.env.VITE_API_URL}/api/favorites/${user.id}/contains/${productID}`
           );
           if (res.ok) {
             const { favorited } = await res.json();
@@ -49,12 +47,11 @@ export default function ProductCard({
       checkFavorite();
     }
 
-    // Only preload cart if parent didn’t provide it
     if (initialInCart === undefined) {
       const checkCart = async () => {
         try {
           const res = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/cart/${user.id}/contains/${id}`
+            `${import.meta.env.VITE_API_URL}/api/cart/${user.id}/contains/${productID}`
           );
           if (res.ok) {
             const { inCart, quantity } = await res.json();
@@ -67,14 +64,10 @@ export default function ProductCard({
       };
       checkCart();
     }
-  }, [user, id, initialFavorited, initialInCart]);
+  }, [user, productID, initialFavorited, initialInCart]);
 
-  // ✅ Toggle favorite
   const toggleFavorite = async () => {
-    if (!user) {
-      console.warn("User must be logged in to favorite");
-      return;
-    }
+    if (!user) return;
 
     try {
       const res = await fetch(
@@ -82,7 +75,7 @@ export default function ProductCard({
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userID: user.id, productID: id }),
+          body: JSON.stringify({ userID: user.id, productID }),
         }
       );
 
@@ -95,12 +88,8 @@ export default function ProductCard({
     }
   };
 
-  // ✅ Toggle cart
   const toggleCart = async () => {
-    if (!user) {
-      console.warn("User must be logged in to use cart");
-      return;
-    }
+    if (!user) return;
 
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/toggle`, {
@@ -108,7 +97,7 @@ export default function ProductCard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userID: user.id,
-          productID: Number(id),
+          productID,
           quantity,
         }),
       });
@@ -122,7 +111,6 @@ export default function ProductCard({
       setInCart(data.inCart);
       setQuantity(data.quantity || 1);
 
-      // ✅ Update shared cart count
       setCartCount((prev) =>
         data.inCart ? prev + 1 : Math.max(0, prev - 1)
       );
@@ -133,40 +121,37 @@ export default function ProductCard({
 
   return (
     <div className="rounded-2xl shadow-md bg-white dark:bg-gray-800 overflow-hidden hover:shadow-lg transition">
-      {/* Product Image */}
-      <Link to={routes.product(id)}>
+      <Link to={routes.product(productID)}>
         <img
-          src={imageUrl}
+          src={imageURL || "/placeholder.png"}
           alt={name}
           className="w-full h-48 object-cover hover:opacity-90 transition"
         />
       </Link>
 
-      {/* Content */}
       <div className="p-4 flex flex-col gap-3">
-        {/* Product Name */}
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          <Link to={routes.product(id)} className="hover:underline">
+          <Link to={routes.product(productID)} className="hover:underline">
             {name}
           </Link>
         </h3>
 
-        {/* Creator Info */}
-        <Link
-          to={routes.user(creator.id)}
-          className="flex items-center gap-2 hover:opacity-80 transition"
-        >
-          <img
-            src={creator.profileImage}
-            alt={creator.name}
-            className="w-8 h-8 rounded-full object-cover"
-          />
-          <p className="text-sm text-gray-700 dark:text-gray-300">
-            {creator.name}
-          </p>
-        </Link>
+        {creator && (
+          <Link
+            to={routes.user(creator.id)}
+            className="flex items-center gap-2 hover:opacity-80 transition"
+          >
+            <img
+              src={creator.profileImage || "/default-avatar.png"}
+              alt={creator.username}
+              className="w-8 h-8 rounded-full object-cover"
+            />
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              {creator.username}
+            </p>
+          </Link>
+        )}
 
-        {/* Price + Quantity */}
         <div className="flex items-center justify-between">
           <p className="text-xl font-bold text-gray-900 dark:text-white">
             ${price.toFixed(2)}
@@ -190,7 +175,6 @@ export default function ProductCard({
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex justify-between mt-2">
           <button
             onClick={toggleCart}
