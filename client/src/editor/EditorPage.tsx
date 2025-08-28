@@ -3,20 +3,32 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { routes } from "../utils/routes";
 import type { Product, ProductType } from "../../../shared/types/product";
+import { useAuth } from "../context/AuthContext";
 
 export default function EditorPage() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   const isNew = !id || id === "new";
 
-  const [form, setForm] = useState<Partial<Product>>({
+  const { user } = useAuth(); // 👈 logged-in user
+
+  const [form, setForm] = useState<{
+    name?: string;
+    price?: number;
+    productType?: ProductType;
+    public?: boolean;
+    description?: string;
+    imageURL?: string;
+    PIN?: string;
+  }>({
     name: "",
     price: 0,
-    productType: "modules" as ProductType,
+    productType: "modules",
     public: false,
     description: "",
     imageURL: "",
   });
+
   const [loading, setLoading] = useState(!isNew);
 
   // Load existing product if editing
@@ -25,10 +37,22 @@ export default function EditorPage() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}`);
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/products/${id}?userID=${user?.id ?? ""}`
+        );
         if (!res.ok) throw new Error("Failed to load product");
         const p: Product = await res.json();
-        setForm(p);
+
+        // ✅ Only keep editable fields
+        setForm({
+          name: p.name,
+          price: p.price,
+          productType: p.productType,
+          description: p.description,
+          imageURL: p.imageURL,
+          public: p.public,
+          PIN: p.PIN,
+        });
       } catch (e) {
         console.error(e);
         alert("Failed to load product.");
@@ -36,14 +60,18 @@ export default function EditorPage() {
         setLoading(false);
       }
     })();
-  }, [id, isNew]);
+  }, [id, isNew, user?.id]);
 
   const saveNew = async () => {
+    if (!user) {
+      alert("You must be logged in to create a product.");
+      return;
+    }
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, userID: user.id }), // ✅ include userID
       });
       if (!res.ok) throw new Error("Create failed");
       const created: Product = await res.json();
@@ -55,11 +83,15 @@ export default function EditorPage() {
   };
 
   const saveExisting = async () => {
+    if (!user) {
+      alert("You must be logged in to save.");
+      return;
+    }
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, userID: user.id }), // ✅ include userID
       });
       if (!res.ok) throw new Error("Update failed");
       alert("Saved!");
@@ -87,15 +119,24 @@ export default function EditorPage() {
       />
       <input
         type="number"
+        inputMode="decimal"
         className="w-full border p-2 rounded"
         placeholder="Price"
-        value={form.price ?? 0}
-        onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+        min={0}
+        value={form.price ?? ""}
+        onChange={(e) =>
+          setForm({
+            ...form,
+            price: e.target.value === "" ? undefined : parseFloat(e.target.value),
+          })
+        }
       />
       <select
         className="w-full border p-2 rounded"
         value={form.productType ?? "modules"}
-        onChange={(e) => setForm({ ...form, productType: e.target.value as ProductType })}
+        onChange={(e) =>
+          setForm({ ...form, productType: e.target.value as ProductType })
+        }
       >
         <option value="towers">towers</option>
         <option value="modules">modules</option>
