@@ -143,4 +143,71 @@ router.get("/:id", async (req, res) => {
   res.json(shaped);
 });
 
+// ========== CREATE PRODUCT ==========
+// POST /products
+router.post("/", async (req, res) => {
+  try {
+    const { userID, name, productType, price, description, imageURL, public: isPublic, PIN } =
+      req.body;
+
+    if (!userID) return res.status(401).json({ error: "Missing userID" });
+    if (!name || !productType || price == null) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const product = await prisma.product.create({
+      data: {
+        name,
+        productType,
+        price: Number(price),
+        description,
+        imageURL,
+        public: isPublic ?? false,
+        PIN,
+        creatorID: userID,
+      },
+    });
+
+    res.status(201).json(product);
+  } catch (err) {
+    console.error("POST /products error:", err);
+    res.status(500).json({ error: "Failed to create product" });
+  }
+});
+
+// ========== UPDATE PRODUCT ==========
+// PUT /products/:id
+router.put("/:id", async (req, res) => {
+  try {
+    const { userID, name, price, productType, description, imageURL, public: isPublic, PIN } =
+      req.body;
+    if (!userID) return res.status(401).json({ error: "Missing userID" });
+
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid id" });
+
+    const existing = await prisma.product.findUnique({ where: { productID: id } });
+    if (!existing) return res.status(404).json({ error: "Product not found" });
+    if (existing.creatorID !== userID) return res.status(403).json({ error: "Forbidden" });
+
+    const updated = await prisma.product.update({
+      where: { productID: id },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(price !== undefined && { price: Number(price) }),
+        ...(productType !== undefined && { productType }),
+        ...(description !== undefined && { description }),
+        ...(imageURL !== undefined && { imageURL }),
+        ...(isPublic !== undefined && { public: isPublic }),
+        ...(PIN !== undefined && { PIN }),
+      },
+    });
+
+    res.json(updated);
+  } catch (err) {
+    console.error("PUT /products/:id error:", err);
+    res.status(500).json({ error: "Failed to update product" });
+  }
+});
+
 export default router;
