@@ -12,32 +12,21 @@ type ProductWithCreator = Prisma.ProductGetPayload<{
   };
 }>;
 
-// GET /products?sort=price&order=asc&userID=uuid
+// ========== SHOP PRODUCTS ==========
+// GET /products?sort=price&order=asc
+// Always returns public products
 router.get("/", async (req, res) => {
   try {
-    const {
-      sort = "new",
-      order = "desc",
-      userID,
-    } = req.query as Record<string, string>;
+    const { sort = "new", order = "desc" } = req.query as Record<string, string>;
 
     let orderBy: any = { createTime: order as "asc" | "desc" };
     if (sort === "price") orderBy = { price: order as "asc" | "desc" };
     if (sort === "updated") orderBy = { updateTime: order as "asc" | "desc" };
 
     const products: ProductWithCreator[] = await prisma.product.findMany({
-      where: userID
-        ? {
-            OR: [
-              { public: true },
-              { creatorID: userID }, // include creator’s private products
-            ],
-          }
-        : { public: true }, // default: only public
+      where: { public: true },
       include: {
-        creator: {
-          select: { id: true, username: true, profileImage: true },
-        },
+        creator: { select: { id: true, username: true, profileImage: true } },
       },
       orderBy,
     });
@@ -68,6 +57,48 @@ router.get("/", async (req, res) => {
   }
 });
 
+// ========== USER LIBRARY ==========
+// GET /products/library/:userID
+// Returns ALL products by this user (public + private)
+router.get("/library/:userID", async (req, res) => {
+  try {
+    const { userID } = req.params;
+
+    const products: ProductWithCreator[] = await prisma.product.findMany({
+      where: { creatorID: userID },
+      include: {
+        creator: { select: { id: true, username: true, profileImage: true } },
+      },
+      orderBy: { updateTime: "desc" },
+    });
+
+    const shaped: Product[] = products.map((p) => ({
+      productID: p.productID,
+      name: p.name,
+      price: Number(p.price),
+      productType: p.productType.toLowerCase() as Product["productType"],
+      creatorID: p.creatorID,
+      creator: {
+        id: p.creator.id,
+        username: p.creator.username,
+        profileImage: p.creator.profileImage ?? "https://via.placeholder.com/40x40",
+      },
+      imageURL: p.imageURL ?? "https://via.placeholder.com/600x400",
+      description: p.description ?? "",
+      public: p.public,
+      createTime: p.createTime.toISOString(),
+      updateTime: p.updateTime.toISOString(),
+      PIN: p.PIN ?? undefined,
+    }));
+
+    res.json(shaped);
+  } catch (e) {
+    console.error("Error fetching user library:", e);
+    res.status(500).json({ error: "Failed to fetch user library" });
+  }
+});
+
+// ========== INDIVIDUAL PRODUCT ==========
 // GET /products/:id?userID=uuid
 router.get("/:id", async (req, res) => {
   const id = Number(req.params.id);
@@ -84,9 +115,7 @@ router.get("/:id", async (req, res) => {
       ],
     },
     include: {
-      creator: {
-        select: { id: true, username: true, profileImage: true },
-      },
+      creator: { select: { id: true, username: true, profileImage: true } },
     },
   });
 
