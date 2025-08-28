@@ -1,6 +1,7 @@
 // client/src/pages/Library.tsx
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import type { Product } from "../../../shared/types/product";
 import LibraryCard from "../components/LibraryCard";
 
@@ -8,6 +9,7 @@ export default function Library() {
   const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!user) return;
@@ -32,8 +34,7 @@ export default function Library() {
   }, [user]);
 
   const handleEdit = (productID: number) => {
-    console.log("Edit product:", productID);
-    // TODO: route to editor page
+    navigate(`/editor/${productID}`);
   };
 
   const handleDelete = async (productID: number) => {
@@ -50,6 +51,10 @@ export default function Library() {
     }
   };
 
+  const handleCreate = () => {
+    navigate("/editor/new"); // 👈 new product editor
+  };
+
   if (!user) {
     return (
       <div className="p-6 text-center">
@@ -60,10 +65,21 @@ export default function Library() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold">My Library</h1>
-      <p className="mt-2 text-gray-600">
-        Manage your saved designs and creations.
-      </p>
+      {/* Header with New Product button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">My Library</h1>
+          <p className="mt-2 text-gray-600">
+            Manage your saved designs and creations.
+          </p>
+        </div>
+        <button
+          onClick={handleCreate}
+          className="px-4 py-2 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition"
+        >
+          + New Product
+        </button>
+      </div>
 
       {loading ? (
         <p className="mt-6 text-gray-500">Loading your creations...</p>
