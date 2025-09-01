@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import FeatureProduct from "../components/FeatureProduct";
+import CompanyFeatures from "../components/CompanyFeatures";
+import AeroponicInfo from "../components/AeroponicInfo";
 
 type Product = {
   product_id: string;
@@ -15,20 +17,47 @@ export default function Home() {
   const data = [
     {
       id: 1,
-      title: "Featured Tower 1",
       imageUrl: "https://picsum.photos/1500/600"
     }, 
     {
       id: 2,
-      title: "Featured Tower 2",
       imageUrl: "https://picsum.photos/1500/600"
     }, 
     {
       id: 3,
-      title: "Featured Tower 3",
       imageUrl: "https://picsum.photos/1500/600"
     }
-  ]
+  ];
+
+  const featuresData = [
+  {
+    title: "Varied Plants",
+    description:
+      "Longer definition on the company features",
+  },
+  {
+    title: "Customization feature",
+    description:
+      "Longer definition on the company features",
+  },
+  {
+    title: "Affordable price",
+    description:
+      "Longer definition on the company features",
+  },
+];
+
+const infos = 
+  {
+    title: 'About Aeroponic',
+    description: 'A brief intro to the aeroponic',
+    imageUrls: [
+      'https://picsum.photos/1500/600',
+      'https://picsum.photos/1500/600'
+    ],
+  }
+;
+
 
   useEffect(() => {
     async function fetchProducts() {
@@ -50,18 +79,15 @@ export default function Home() {
 
   return (
     <div className="p-6">
-      <h1 className="text-4xl font-bold mb-4">Welcome to EcoTier Solutions</h1>
-      {loading && <p>Loading products...</p>}
-      {!loading && products.length === 0 && <p>No products found.</p>}
+      <h1 className="text-4xl font-bold text-center mb-10">Welcome to EcoTier Solutions</h1>
       <div>
-        Feature product
         <FeatureProduct data = {data}/>
       </div>
       <div>
-        About us
+        <CompanyFeatures features = {featuresData}/>
       </div>
       <div>
-        What is aeroponic? 
+        <AeroponicInfo section = {infos}/>
       </div>
       <ul className="space-y-2">
         {products.map((p) => (

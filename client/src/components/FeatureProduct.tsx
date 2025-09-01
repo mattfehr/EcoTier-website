@@ -6,7 +6,6 @@ import { twMerge } from "tailwind-merge";
 interface CarouselItem {
   id: string | number;
   imageUrl: string;
-  title: string;
 }
 
 interface CarouselProps {
@@ -80,9 +79,6 @@ const Carousel: React.FC<CarouselProps> = ({ data = [], duration = 4900 }) => {
                   }}
                 />
               </div>
-              <div className="w-full text-left text-base tracking-wider leading-7 text-green-600 py-4 px-4">
-                {item?.title}
-              </div>
             </div>
           ))}
       </div>
@@ -99,14 +95,6 @@ const Carousel: React.FC<CarouselProps> = ({ data = [], duration = 4900 }) => {
                   isActive ? "w-[30px]" : "w-2"
                 )}
               >
-                {isActive && (
-                  <div className="absolute bottom-0 left-0 w-full h-2 bg-transparent rounded-full">
-                    <div
-                      ref={progressRef}
-                      className="h-full bg-green-600 rounded-full"
-                    />
-                  </div>
-                )}
               </div>
             );
           })}
