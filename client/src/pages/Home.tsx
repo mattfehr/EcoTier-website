@@ -25,7 +25,7 @@ export default function Home() {
     }, 
     {
       id: 3,
-      imageUrl: "https://picsum.photos/1500/600"
+      imageUrl: "https://picsum.photos/1000/600"
     }
   ];
 
@@ -52,8 +52,8 @@ const infos =
     title: 'About Aeroponic',
     description: 'A brief intro to the aeroponic',
     imageUrls: [
-      'https://picsum.photos/1500/600',
-      'https://picsum.photos/1500/600'
+      'https://picsum.photos/1000/600',
+      'https://picsum.photos/1000/600'
     ],
   }
 ;
