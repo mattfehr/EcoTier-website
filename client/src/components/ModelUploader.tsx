@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { supabase } from "../lib/supabase"; // existing client
-// If you keep API base in env (recommended):
+import { supabase } from "../lib/supabase";
+import { slugify } from "../utils/slugify";
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 type Props = {
@@ -9,15 +10,6 @@ type Props = {
   onSaved?: () => void;       // optional: refetch product after upload
   maxBytes?: number;          // default 50MB
 };
-
-function slugify(input: string) {
-  return input
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9\-_.]/g, "")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-}
 
 export default function ModelUploader({ productID, userID, onSaved, maxBytes = 50 * 1024 * 1024 }: Props) {
   const [busy, setBusy] = useState(false);
