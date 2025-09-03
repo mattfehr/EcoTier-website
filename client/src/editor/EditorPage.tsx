@@ -37,42 +37,44 @@ export default function EditorPage() {
 
   const [loading, setLoading] = useState(!isNew);
 
+  // 🔹 Refactor: shared product fetcher
+  const fetchProduct = async () => {
+    if (isNew || !id) return;
+    try {
+      setLoading(true);
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/products/${id}?userID=${
+          user?.id ?? ""
+        }`
+      );
+      if (!res.ok) throw new Error("Failed to load product");
+      const p: Product = await res.json();
+      setForm({
+        name: p.name,
+        price: p.price,
+        productType: p.productType,
+        description: p.description,
+        imageURL: p.imageURL,
+        modelURL: (p as any).modelURL,
+        modelFileType: (p as any).modelFileType,
+        modelFilename: (p as any).modelFilename,
+        public: p.public,
+        PIN: p.PIN,
+      });
+    } catch (e) {
+      console.error(e);
+      alert("Failed to load product.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Load existing product if editing
   useEffect(() => {
-    if (isNew) return;
-    (async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/products/${id}?userID=${
-            user?.id ?? ""
-          }`
-        );
-        if (!res.ok) throw new Error("Failed to load product");
-        const p: Product = await res.json();
-
-        setForm({
-          name: p.name,
-          price: p.price,
-          productType: p.productType,
-          description: p.description,
-          imageURL: p.imageURL,
-          modelURL: (p as any).modelURL, // new fields not in shared type yet
-          modelFileType: (p as any).modelFileType,
-          modelFilename: (p as any).modelFilename,
-          public: p.public,
-          PIN: p.PIN,
-        });
-      } catch (e) {
-        console.error(e);
-        alert("Failed to load product.");
-      } finally {
-        setLoading(false);
-      }
-    })();
+    if (!isNew) fetchProduct();
   }, [id, isNew, user?.id]);
 
- // Upload helper for images
+  // Upload helper for images
   const uploadImage = async (file: File) => {
     if (!user) return;
 
@@ -222,7 +224,12 @@ export default function EditorPage() {
           <ModelUploader
             productID={Number(id)}
             userID={user.id}
-            onSaved={() => window.location.reload()}
+            existingFile={
+              form.modelFilename && form.modelFileType
+                ? { name: form.modelFilename, type: form.modelFileType }
+                : undefined
+            }
+            onSaved={fetchProduct}
           />
           {form.modelURL && form.modelFileType && (
             <div className="mt-4">
