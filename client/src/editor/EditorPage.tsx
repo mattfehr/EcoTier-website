@@ -202,6 +202,9 @@ export default function EditorPage() {
           type="file"
           accept="image/*"
           onChange={(e) => e.target.files && uploadImage(e.target.files[0])}
+          className="block w-full text-sm file:mr-4 file:rounded file:border-0 
+                    file:bg-blue-600 file:px-3 file:py-2 file:text-white 
+                    hover:file:bg-blue-700"
         />
         {form.imageURL && (
           <img
