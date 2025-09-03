@@ -109,22 +109,28 @@ export default function ModelUploader({
 
   return (
     <div className="space-y-2">
+      {/* Hidden input */}
       <input
+        id={`model-file-input-${productID}`}
         type="file"
         accept={ACCEPT}
         onChange={(e) => e.target.files && handleFile(e.target.files[0])}
         disabled={busy}
-        className="block w-full text-sm file:mr-4 file:rounded file:border-0 
-                   file:bg-blue-600 file:px-3 file:py-2 file:text-white 
-                   hover:file:bg-blue-700"
+        className="sr-only"
       />
+      {/* Styled button */}
+      <label
+        htmlFor={`model-file-input-${productID}`}
+        className={`inline-block cursor-pointer rounded px-3 py-2 text-white ${
+          busy ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+        }`}
+      >
+        Choose File
+      </label>
 
       {progress !== null && (
-        <div className="h-2 w-full bg-gray-200 rounded overflow-hidden">
-          <div
-            className="h-2 bg-blue-600 transition-all"
-            style={{ width: `${progress}%` }}
-          />
+        <div className="h-2 w-full rounded bg-gray-200 overflow-hidden">
+          <div className="h-2 bg-blue-600 transition-all" style={{ width: `${progress}%` }} />
         </div>
       )}
 

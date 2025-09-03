@@ -8,6 +8,18 @@ import { slugify } from "../utils/slugify";
 import ModelUploader from "../components/ModelUploader";
 import ModelViewer from "../components/ModelViewer";
 
+function fileNameFromUrl(url?: string) {
+  if (!url) return "";
+  try {
+    const u = new URL(url);
+    const last = u.pathname.split("/").pop() || "";
+    return last.split("?")[0];
+  } catch {
+    return "";
+  }
+}
+
+
 export default function EditorPage() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
@@ -200,20 +212,36 @@ export default function EditorPage() {
       {/* Image Upload */}
       <div>
         <label className="block font-medium mb-1">Product Image</label>
+
+        {/* Hidden input + styled label as the button */}
         <input
+          id="product-image-input"
           type="file"
           accept="image/*"
           onChange={(e) => e.target.files && uploadImage(e.target.files[0])}
-          className="block w-full text-sm file:mr-4 file:rounded file:border-0 
-                    file:bg-blue-600 file:px-3 file:py-2 file:text-white 
-                    hover:file:bg-blue-700"
+          className="sr-only"  // hide the native control
         />
-        {form.imageURL && (
-          <img
-            src={form.imageURL}
-            alt="preview"
-            className="mt-2 h-32 rounded border"
-          />
+        <label
+          htmlFor="product-image-input"
+          className="inline-block cursor-pointer rounded bg-blue-600 px-3 py-2 text-white hover:bg-blue-700"
+        >
+          Choose Image
+        </label>
+
+        {/* Our own status instead of native “No file chosen” */}
+        {form.imageURL ? (
+          <div className="mt-2">
+            <p className="text-sm text-gray-700">
+              Image attached{fileNameFromUrl(form.imageURL) ? `: ${fileNameFromUrl(form.imageURL)}` : ""}
+            </p>
+            <img
+              src={form.imageURL}
+              alt="preview"
+              className="mt-1 h-32 rounded border"
+            />
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-gray-500">No image uploaded yet.</p>
         )}
       </div>
 
