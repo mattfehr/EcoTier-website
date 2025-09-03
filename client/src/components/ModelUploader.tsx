@@ -78,7 +78,6 @@ export default function ModelUploader({ productID, userID, onSaved, maxBytes = 5
           modelSizeBytes: file.size,
           modelFilename: file.name,
         }),
-        credentials: "include",
       });
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({}));
