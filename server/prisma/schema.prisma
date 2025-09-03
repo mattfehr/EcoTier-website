@@ -128,6 +128,13 @@ model Product {
   PIN         String?
   imageURL    String?
 
+  // 3D model file import
+  modelURL        String? // Supabase storage URL
+  modelFileType   String? // e.g. "STL", "OBJ", "3MF", "STEP"
+  modelSizeBytes  Int? // file size in bytes
+  modelFilename   String? // original filename
+  modelPreviewURL String? // optional: future thumbnail preview
+
   creator    User        @relation("CreatorProducts", fields: [creatorID], references: [id])
   orderItems OrderItem[]
   cartItems  CartItem[]
@@ -136,6 +143,9 @@ model Product {
 
   towersAsPart  TowerComponent[] @relation("Part")
   towersAsTower TowerComponent[] @relation("Tower")
+
+  //Relation to ProductConfig for editor templates
+  config ProductConfig?
 
   @@map("product")
 }
@@ -151,4 +161,15 @@ model TowerComponent {
 
   @@id([towerID, partID])
   @@map("towercomponent")
+}
+
+model ProductConfig {
+  id        Int    @id @default(autoincrement())
+  productID Int    @unique
+  template  String // e.g. "tower_basic"
+  params    Json // Example: { height: 120, sites: 24, led_rings: 2 }
+
+  product Product @relation(fields: [productID], references: [productID])
+
+  @@map("product_config")
 }
