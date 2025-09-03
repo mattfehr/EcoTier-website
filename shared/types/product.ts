@@ -18,4 +18,11 @@ export interface Product {
   description?: string;
   PIN?: string;
   imageURL?: string;
+
+  // 3D model fields
+  modelURL?: string;
+  modelFileType?: string;
+  modelFilename?: string;
+  modelSizeBytes?: number;
+  modelPreviewURL?: string;
 }

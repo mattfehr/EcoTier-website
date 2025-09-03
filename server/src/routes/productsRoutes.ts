@@ -48,6 +48,13 @@ router.get("/", async (req, res) => {
       createTime: p.createTime.toISOString(),
       updateTime: p.updateTime.toISOString(),
       PIN: p.PIN ?? undefined,
+
+      // ✅ model fields
+      modelURL: p.modelURL ?? undefined,
+      modelFileType: p.modelFileType ?? undefined,
+      modelFilename: p.modelFilename ?? undefined,
+      modelSizeBytes: p.modelSizeBytes ?? undefined,
+      modelPreviewURL: p.modelPreviewURL ?? undefined,
     }));
 
     res.json(shaped);
@@ -89,6 +96,13 @@ router.get("/library/:userID", async (req, res) => {
       createTime: p.createTime.toISOString(),
       updateTime: p.updateTime.toISOString(),
       PIN: p.PIN ?? undefined,
+
+      // ✅ model fields
+      modelURL: p.modelURL ?? undefined,
+      modelFileType: p.modelFileType ?? undefined,
+      modelFilename: p.modelFilename ?? undefined,
+      modelSizeBytes: p.modelSizeBytes ?? undefined,
+      modelPreviewURL: p.modelPreviewURL ?? undefined,
     }));
 
     res.json(shaped);
@@ -138,6 +152,13 @@ router.get("/:id", async (req, res) => {
     createTime: product.createTime.toISOString(),
     updateTime: product.updateTime.toISOString(),
     PIN: product.PIN ?? undefined,
+
+    // ✅ model fields
+    modelURL: product.modelURL ?? undefined,
+    modelFileType: product.modelFileType ?? undefined,
+    modelFilename: product.modelFilename ?? undefined,
+    modelSizeBytes: product.modelSizeBytes ?? undefined,
+    modelPreviewURL: product.modelPreviewURL ?? undefined,
   };
 
   res.json(shaped);
@@ -266,4 +287,3 @@ router.patch("/:id/model", async (req, res) => {
     res.status(500).json({ error: "Failed to update model" });
   }
 });
-
