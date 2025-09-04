@@ -25,7 +25,7 @@ router.get("/:productID", async (req, res) => {
       username: c.user.username,
       profileImage: c.user.profileImage ?? "/default-avatar.png",
       content: c.content,
-      rating: c.rating ?? null,
+      rating: c.rating,
       postTime: c.postTime.toISOString(),
     }));
 
@@ -44,12 +44,15 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Missing fields" });
     }
 
+    const safeRating =
+      typeof rating === "number" && rating >= 1 && rating <= 5 ? rating : 5;
+
     const created = await prisma.comment.create({
       data: {
         userID,
         productID: Number(productID),
         content,
-        rating, // optional
+        rating: safeRating,
       },
       include: {
         user: { select: { id: true, username: true, profileImage: true } },
@@ -62,7 +65,7 @@ router.post("/", async (req, res) => {
       username: created.user.username,
       profileImage: created.user.profileImage ?? "/default-avatar.png",
       content: created.content,
-      rating: created.rating ?? null,
+      rating: created.rating,
       postTime: created.postTime.toISOString(),
     });
   } catch (err) {
@@ -81,9 +84,12 @@ router.patch("/:id", async (req, res) => {
       return res.status(400).json({ error: "Missing fields" });
     }
 
+    const safeRating =
+      typeof rating === "number" && rating >= 1 && rating <= 5 ? rating : 5;
+
     const updated = await prisma.comment.update({
       where: { id: Number(id) },
-      data: { content, rating },
+      data: { content, rating: safeRating },
       include: {
         user: { select: { id: true, username: true, profileImage: true } },
       },
@@ -95,7 +101,7 @@ router.patch("/:id", async (req, res) => {
       username: updated.user.username,
       profileImage: updated.user.profileImage ?? "/default-avatar.png",
       content: updated.content,
-      rating: updated.rating ?? null,
+      rating: updated.rating,
       postTime: updated.postTime.toISOString(),
     });
   } catch (err) {

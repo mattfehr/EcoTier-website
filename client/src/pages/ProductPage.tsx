@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Heart, ShoppingCart, Minus, Plus } from "lucide-react";
+import { Heart, ShoppingCart, Minus, Plus, Star } from "lucide-react";
 import type { Product } from "../../../shared/types/product";
 import { routes } from "../utils/routes";
 import { useAuth } from "../context/AuthContext";
@@ -16,6 +16,7 @@ interface Comment {
   profileImage?: string;
   content: string;
   postTime: string;
+  rating: number; // ⭐ added
 }
 
 export default function ProductPage() {
@@ -32,6 +33,7 @@ export default function ProductPage() {
   // Comments state
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
+  const [newRating, setNewRating] = useState<number>(5); // ⭐ default 5
 
   useEffect(() => {
     if (!id) return;
@@ -131,25 +133,28 @@ export default function ProductPage() {
           userID: user.id,
           productID: product.productID,
           content: newComment,
+          rating: newRating, // ⭐ send rating on create
         }),
       });
       if (res.ok) {
         const added: Comment = await res.json();
         setComments((prev) => [added, ...prev]);
         setNewComment("");
+        setNewRating(5);
       }
     } catch (err) {
       console.error("❌ Error posting comment:", err);
     }
   };
 
-  const handleUpdateComment = async (id: string, content: string) => {
+  // ⭐ note signature change to include rating
+  const handleUpdateComment = async (id: string, content: string, rating: number) => {
     if (!user) return;
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/comments/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userID: user.id, content }),
+        body: JSON.stringify({ userID: user.id, content, rating }),
       });
       if (res.ok) {
         const updated: Comment = await res.json();
@@ -286,20 +291,45 @@ export default function ProductPage() {
       <section>
         <h2 className="text-xl font-semibold mb-4">Comments</h2>
         {user && (
-          <form onSubmit={handleSubmitComment} className="flex gap-2 mb-4">
-            <input
-              type="text"
-              placeholder="Write a comment..."
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              className="flex-1 border p-2 rounded"
-            />
-            <button
-              type="submit"
-              className="px-4 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Post
-            </button>
+          <form onSubmit={handleSubmitComment} className="flex flex-col gap-2 mb-4">
+            <div className="flex items-center gap-2">
+              {/* ⭐ Rating picker for new comment */}
+              <div className="flex">
+                {[1, 2, 3, 4, 5].map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setNewRating(r)}
+                    className="focus:outline-none"
+                    aria-label={`Set rating ${r}`}
+                  >
+                    <Star
+                      size={20}
+                      className={
+                        r <= newRating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                      }
+                    />
+                  </button>
+                ))}
+              </div>
+              <span className="text-sm text-gray-500">Your rating</span>
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Write a comment..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="flex-1 border p-2 rounded"
+              />
+              <button
+                type="submit"
+                className="px-4 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Post
+              </button>
+            </div>
           </form>
         )}
 
@@ -314,8 +344,9 @@ export default function ProductPage() {
               profileImage={c.profileImage}
               content={c.content}
               postTime={c.postTime}
+              rating={c.rating}            // ⭐ pass rating down
               currentUserID={user?.id}
-              onUpdate={handleUpdateComment}
+              onUpdate={handleUpdateComment} // expects (id, content, rating)
               onDelete={handleDeleteComment}
             />
           ))}

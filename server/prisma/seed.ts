@@ -1,6 +1,8 @@
 // prisma/seed.ts
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, ProductType } from "@prisma/client";
 const prisma = new PrismaClient();
+
+// next time do this seed also add example comments
 
 async function main() {
   console.log("🌱 Seeding database...");
@@ -36,7 +38,7 @@ async function main() {
     {
       name: "EcoTower Pro",
       price: 199.99,
-      productType: "TOWERS", // ✅ Prisma enum key
+      productType: ProductType.TOWERS, 
       creatorID: users[0].id,
       imageURL: "https://via.placeholder.com/600x400",
       public: true,
@@ -45,7 +47,7 @@ async function main() {
     {
       name: "Herb Module",
       price: 49.99,
-      productType: "MODULES", // ✅ Prisma enum key
+      productType: ProductType.MODULES,  // ✅ Prisma enum key
       creatorID: users[1].id,
       imageURL: "https://via.placeholder.com/600x400",
       public: true,
@@ -54,7 +56,7 @@ async function main() {
     {
       name: "SunShield Add-on",
       price: 29.0,
-      productType: "ADDONS", // ✅ Prisma enum key
+      productType: ProductType.ADDONS, // ✅ Prisma enum key
       creatorID: users[0].id,
       imageURL: "https://via.placeholder.com/600x400",
       public: true,

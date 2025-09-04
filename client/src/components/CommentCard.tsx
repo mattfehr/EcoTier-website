@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Star } from "lucide-react";
 
 interface CommentProps {
   id: string;
@@ -7,8 +8,9 @@ interface CommentProps {
   profileImage?: string;
   content: string;
   postTime: string;
-  currentUserID?: string; // 👈 logged in user
-  onUpdate: (id: string, content: string) => void;
+  rating: number; // 👈 new field
+  currentUserID?: string;
+  onUpdate: (id: string, content: string, rating: number) => void;
   onDelete: (id: string) => void;
 }
 
@@ -19,17 +21,19 @@ export default function CommentCard({
   profileImage,
   content,
   postTime,
+  rating,
   currentUserID,
   onUpdate,
   onDelete,
 }: CommentProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(content);
+  const [editRating, setEditRating] = useState(rating);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editContent.trim()) {
-      onUpdate(id, editContent);
+      onUpdate(id, editContent, editRating);
       setIsEditing(false);
     }
   };
@@ -42,17 +46,52 @@ export default function CommentCard({
         className="w-10 h-10 rounded-full object-cover"
       />
       <div className="flex-1">
-        <p className="font-semibold">{username}</p>
+        <div className="flex items-center gap-2">
+          <p className="font-semibold">{username}</p>
+          {/* ⭐ Rating display */}
+          <div className="flex">
+            {[...Array(5)].map((_, i) => (
+              <Star
+                key={i}
+                size={16}
+                className={
+                  i < rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                }
+              />
+            ))}
+          </div>
+        </div>
+
         <p className="text-sm text-gray-500">{new Date(postTime).toLocaleString()}</p>
 
         {isEditing ? (
-          <form onSubmit={handleSubmit} className="mt-1 flex gap-2">
+          <form onSubmit={handleSubmit} className="mt-1 space-y-2">
             <input
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
-              className="flex-1 border p-1 rounded"
+              className="w-full border p-1 rounded"
             />
-            <button className="px-2 bg-blue-600 text-white rounded">Save</button>
+            {/* ⭐ Rating edit */}
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setEditRating(r)}
+                  className="focus:outline-none"
+                >
+                  <Star
+                    size={20}
+                    className={
+                      r <= editRating
+                        ? "text-yellow-400 fill-yellow-400"
+                        : "text-gray-300"
+                    }
+                  />
+                </button>
+              ))}
+            </div>
+            <button className="px-3 py-1 bg-blue-600 text-white rounded">Save</button>
           </form>
         ) : (
           <p className="mt-1">{content}</p>
