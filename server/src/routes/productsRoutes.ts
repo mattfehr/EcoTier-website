@@ -51,7 +51,10 @@ router.get("/", async (req, res) => {
 
       // ✅ model fields
       modelURL: p.modelURL ?? undefined,
-      modelFileType: p.modelFileType ?? undefined,
+      modelFileType:
+        p.modelFileType === "THREE_MF"
+          ? "3MF"
+          : (p.modelFileType as Product["modelFileType"]) ?? undefined,
       modelFilename: p.modelFilename ?? undefined,
       modelSizeBytes: p.modelSizeBytes ?? undefined,
       modelPreviewURL: p.modelPreviewURL ?? undefined,
@@ -99,7 +102,10 @@ router.get("/library/:userID", async (req, res) => {
 
       // ✅ model fields
       modelURL: p.modelURL ?? undefined,
-      modelFileType: p.modelFileType ?? undefined,
+      modelFileType:
+        p.modelFileType === "THREE_MF"
+          ? "3MF"
+          : (p.modelFileType as Product["modelFileType"]) ?? undefined,
       modelFilename: p.modelFilename ?? undefined,
       modelSizeBytes: p.modelSizeBytes ?? undefined,
       modelPreviewURL: p.modelPreviewURL ?? undefined,
@@ -155,7 +161,10 @@ router.get("/:id", async (req, res) => {
 
     // ✅ model fields
     modelURL: product.modelURL ?? undefined,
-    modelFileType: product.modelFileType ?? undefined,
+    modelFileType:
+      product.modelFileType === "THREE_MF"
+        ? "3MF"
+        : (product.modelFileType as Product["modelFileType"]) ?? undefined,
     modelFilename: product.modelFilename ?? undefined,
     modelSizeBytes: product.modelSizeBytes ?? undefined,
     modelPreviewURL: product.modelPreviewURL ?? undefined,

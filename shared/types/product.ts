@@ -1,5 +1,6 @@
 // shared/types/product.ts
 export type ProductType = "towers" | "modules" | "addons";
+export type ModelFileType = "STL" | "OBJ" | "3MF" | "STEP";
 
 export interface Product {
   productID: number;                  // matches Prisma

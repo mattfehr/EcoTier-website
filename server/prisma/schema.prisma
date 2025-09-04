@@ -115,25 +115,38 @@ model Comment {
   @@map("comment")
 }
 
+enum ProductType {
+  TOWERS
+  MODULES
+  ADDONS
+}
+
+enum ModelFileType {
+  STL
+  OBJ
+  THREE_MF @map("3MF")
+  STEP
+}
+
 model Product {
-  productID   Int      @id @default(autoincrement())
-  productType String
-  name        String   @unique
-  creatorID   String   @db.Uuid
+  productID   Int         @id @default(autoincrement())
+  productType ProductType
+  name        String      @unique
+  creatorID   String      @db.Uuid
   price       Float
   public      Boolean
-  createTime  DateTime @default(now())
-  updateTime  DateTime @updatedAt
+  createTime  DateTime    @default(now())
+  updateTime  DateTime    @updatedAt
   description String?
   PIN         String?
   imageURL    String?
 
   // 3D model file import
-  modelURL        String? // Supabase storage URL
-  modelFileType   String? // e.g. "STL", "OBJ", "3MF", "STEP"
-  modelSizeBytes  Int? // file size in bytes
-  modelFilename   String? // original filename
-  modelPreviewURL String? // optional: future thumbnail preview
+  modelURL        String?
+  modelFileType   ModelFileType?
+  modelSizeBytes  Int?
+  modelFilename   String?
+  modelPreviewURL String?
 
   creator    User        @relation("CreatorProducts", fields: [creatorID], references: [id])
   orderItems OrderItem[]
@@ -144,7 +157,6 @@ model Product {
   towersAsPart  TowerComponent[] @relation("Part")
   towersAsTower TowerComponent[] @relation("Tower")
 
-  //Relation to ProductConfig for editor templates
   config ProductConfig?
 
   @@map("product")
