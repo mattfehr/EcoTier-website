@@ -6,6 +6,7 @@ import { routes } from "../utils/routes";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import ModelViewer from "../components/ModelViewer";
+import CommentCard from "../components/CommentCard";
 
 // Types for comments
 interface Comment {
@@ -31,8 +32,6 @@ export default function ProductPage() {
   // Comments state
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState("");
 
   useEffect(() => {
     if (!id) return;
@@ -155,8 +154,6 @@ export default function ProductPage() {
       if (res.ok) {
         const updated: Comment = await res.json();
         setComments((prev) => prev.map((c) => (c.id === id ? updated : c)));
-        setEditingId(null);
-        setEditContent("");
       }
     } catch (err) {
       console.error("❌ Error updating comment:", err);
@@ -309,63 +306,18 @@ export default function ProductPage() {
         <div className="space-y-3">
           {comments.length === 0 && <p className="text-gray-500">No comments yet.</p>}
           {comments.map((c) => (
-            <div
+            <CommentCard
               key={c.id}
-              className="flex gap-3 p-3 border rounded-lg bg-gray-50 dark:bg-gray-900"
-            >
-              <img
-                src={c.profileImage || "/default-avatar.png"}
-                alt={c.username}
-                className="w-10 h-10 rounded-full object-cover"
-              />
-              <div className="flex-1">
-                <p className="font-semibold">{c.username}</p>
-                <p className="text-sm text-gray-500">
-                  {new Date(c.postTime).toLocaleString()}
-                </p>
-
-                {editingId === c.id ? (
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      handleUpdateComment(c.id, editContent);
-                    }}
-                    className="mt-1 flex gap-2"
-                  >
-                    <input
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      className="flex-1 border p-1 rounded"
-                    />
-                    <button className="px-2 bg-blue-600 text-white rounded">
-                      Save
-                    </button>
-                  </form>
-                ) : (
-                  <p className="mt-1">{c.content}</p>
-                )}
-
-                {user?.id === c.userID && (
-                  <div className="flex gap-2 mt-1 text-sm">
-                    <button
-                      onClick={() => {
-                        setEditingId(c.id);
-                        setEditContent(c.content);
-                      }}
-                      className="text-blue-500 hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteComment(c.id)}
-                      className="text-red-500 hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+              id={c.id}
+              userID={c.userID}
+              username={c.username}
+              profileImage={c.profileImage}
+              content={c.content}
+              postTime={c.postTime}
+              currentUserID={user?.id}
+              onUpdate={handleUpdateComment}
+              onDelete={handleDeleteComment}
+            />
           ))}
         </div>
       </section>
