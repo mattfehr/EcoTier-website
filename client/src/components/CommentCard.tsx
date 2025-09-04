@@ -8,7 +8,7 @@ interface CommentProps {
   profileImage?: string;
   content: string;
   postTime: string;
-  rating: number; // 👈 new field
+  rating: number;
   currentUserID?: string;
   onUpdate: (id: string, content: string, rating: number) => void;
   onDelete: (id: string) => void;

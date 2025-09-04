@@ -16,7 +16,7 @@ interface Comment {
   profileImage?: string;
   content: string;
   postTime: string;
-  rating: number; // ⭐ added
+  rating: number;
 }
 
 export default function ProductPage() {
@@ -30,10 +30,12 @@ export default function ProductPage() {
   const { user } = useAuth();
   const { setCartCount } = useCart();
 
-  // Comments state
+  // Comments + ratings state
   const [comments, setComments] = useState<Comment[]>([]);
+  const [averageRating, setAverageRating] = useState<number | null>(null);
+  const [reviewCount, setReviewCount] = useState<number>(0);
   const [newComment, setNewComment] = useState("");
-  const [newRating, setNewRating] = useState<number>(5); // ⭐ default 5
+  const [newRating, setNewRating] = useState<number>(5);
 
   useEffect(() => {
     if (!id) return;
@@ -74,6 +76,17 @@ export default function ProductPage() {
         if (commentsRes.ok) {
           const c: Comment[] = await commentsRes.json();
           setComments(c);
+
+          // ⭐ compute average rating from comments (ignore nulls)
+          const ratings = c.map((x) => x.rating).filter((r): r is number => r != null);
+          if (ratings.length > 0) {
+            const avg = ratings.reduce((sum, r) => sum + r, 0) / ratings.length;
+            setAverageRating(avg);
+            setReviewCount(ratings.length);
+          } else {
+            setAverageRating(null);
+            setReviewCount(0);
+          }
         }
       } catch (err) {
         console.error("Failed to load product:", err);
@@ -133,7 +146,7 @@ export default function ProductPage() {
           userID: user.id,
           productID: product.productID,
           content: newComment,
-          rating: newRating, // ⭐ send rating on create
+          rating: newRating,
         }),
       });
       if (res.ok) {
@@ -147,7 +160,6 @@ export default function ProductPage() {
     }
   };
 
-  // ⭐ note signature change to include rating
   const handleUpdateComment = async (id: string, content: string, rating: number) => {
     if (!user) return;
     try {
@@ -212,6 +224,30 @@ export default function ProductPage() {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           {product.name}
         </h1>
+
+        {/* ⭐ Average rating */}
+        {reviewCount > 0 ? (
+          <div className="flex items-center gap-2">
+            <div className="flex">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Star
+                  key={i}
+                  size={18}
+                  className={
+                    averageRating && i <= Math.round(averageRating)
+                      ? "text-yellow-400 fill-yellow-400"
+                      : "text-gray-300"
+                  }
+                />
+              ))}
+            </div>
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {averageRating?.toFixed(1)} ({reviewCount} reviews)
+            </span>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">No reviews yet</p>
+        )}
 
         {/* Creator */}
         {product.creator && (
@@ -344,9 +380,9 @@ export default function ProductPage() {
               profileImage={c.profileImage}
               content={c.content}
               postTime={c.postTime}
-              rating={c.rating}            // ⭐ pass rating down
+              rating={c.rating}
               currentUserID={user?.id}
-              onUpdate={handleUpdateComment} // expects (id, content, rating)
+              onUpdate={handleUpdateComment}
               onDelete={handleDeleteComment}
             />
           ))}
