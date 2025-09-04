@@ -1,14 +1,14 @@
-// src/components/Header.tsx
+// src/components/Header.ts
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
 import betterlogo from "../assets/betterlogo.png";
 import { useAuth } from "../context/AuthContext";
 import { routes } from "../utils/routes";
-import { useCart } from "../context/CartContext"; // ✅ import cart context
+import { useCart } from "../context/CartContext";
 
 export default function Header() {
   const { user, signOut } = useAuth();
-  const { cartCount } = useCart(); // ✅ get count from context
+  const { cartCount } = useCart();
   const navigate = useNavigate();
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -60,6 +60,16 @@ export default function Header() {
             </span>
           )}
         </NavLink>
+
+        {user && (
+          <NavLink to={`/user/${user.id}`}>
+            <img
+              src={user.profileImage || "/placeholder.png"}
+              alt="Profile"
+              className="w-8 h-8 rounded-full object-cover border border-gray-300 hover:ring-2 hover:ring-green-500"
+            />
+          </NavLink>
+        )}
 
         {user ? (
           <button

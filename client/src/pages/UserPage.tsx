@@ -14,7 +14,7 @@ type Mode = "all" | ProductType;
 
 export default function UserPage() {
   const { id } = useParams<{ id: string }>();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, refreshUser } = useAuth(); // 👈 include refreshUser
   const [user, setUser] = useState<UserPublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -166,6 +166,8 @@ export default function UserPage() {
       const updated = await res.json();
       setUser(updated);
       setEditing(false);
+
+      await refreshUser(); // 👈 refresh AuthContext so header updates
     } catch (err) {
       console.error("❌ Error updating profile:", err);
     }
