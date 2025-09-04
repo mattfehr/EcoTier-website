@@ -71,7 +71,8 @@ router.get("/:id", async (req, res) => {
         creator: {
           id: user.id,
           username: user.username,
-          profileImage: user.profileImage ?? "https://via.placeholder.com/40x40",
+          profileImage:
+            user.profileImage ?? "https://via.placeholder.com/40x40",
         },
       })),
 
@@ -92,7 +93,8 @@ router.get("/:id", async (req, res) => {
           creator: {
             id: p.creator.id,
             username: p.creator.username,
-            profileImage: p.creator.profileImage ?? "https://via.placeholder.com/40x40",
+            profileImage:
+              p.creator.profileImage ?? "https://via.placeholder.com/40x40",
           },
         };
       }),
@@ -102,6 +104,49 @@ router.get("/:id", async (req, res) => {
   } catch (e) {
     console.error("Error fetching user:", e);
     res.status(500).json({ error: "Failed to fetch user" });
+  }
+});
+
+// PATCH /users/:id (update profile)
+router.patch("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { userId, username, bio, profileImage } = req.body;
+
+  // Only allow if the logged-in user is editing themselves
+  if (id !== userId) {
+    return res
+      .status(403)
+      .json({ error: "Not authorized to edit this profile" });
+  }
+
+  try {
+    const updated = await prisma.user.update({
+      where: { id },
+      data: {
+        ...(username && { username }),
+        ...(bio && { bio }),
+        ...(profileImage && { profileImage }),
+      },
+      select: {
+        id: true,
+        username: true,
+        bio: true,
+        profileImage: true,
+        email: true,
+        createTime: true,
+      },
+    });
+
+    res.json({
+      ...updated,
+      createTime: updated.createTime.toISOString(),
+      profileImage:
+        updated.profileImage ?? "https://via.placeholder.com/40x40",
+      bio: updated.bio ?? "",
+    });
+  } catch (e) {
+    console.error("Error updating user:", e);
+    res.status(500).json({ error: "Failed to update user" });
   }
 });
 
@@ -126,7 +171,8 @@ router.get("/:id/following", async (req, res) => {
     const shaped = follows.map((f) => ({
       id: f.following.id,
       username: f.following.username,
-      profileImage: f.following.profileImage ?? "https://via.placeholder.com/40x40",
+      profileImage:
+        f.following.profileImage ?? "https://via.placeholder.com/40x40",
     }));
 
     res.json(shaped);

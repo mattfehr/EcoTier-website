@@ -1,6 +1,8 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { supabase } from "../lib/supabase";
+import { slugify } from "../utils/slugify";
 import type { UserPublicProfile } from "../../../shared/types/user";
 import type { Product, ProductType } from "../../../shared/types/product";
 
@@ -24,6 +26,11 @@ export default function UserPage() {
   const [sort, setSort] = useState<"new" | "price">("new");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
 
+  // Editing state
+  const isOwnProfile = currentUser?.id === user?.id;
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ username: "", bio: "", profileImage: "" });
+
   // Fetch user profile
   useEffect(() => {
     if (!id) return;
@@ -35,6 +42,11 @@ export default function UserPage() {
 
         const data: UserPublicProfile = await res.json();
         setUser(data);
+        setForm({
+          username: data.username,
+          bio: data.bio || "",
+          profileImage: data.profileImage || "",
+        });
       } catch (err) {
         console.error("❌ Error loading user:", err);
         setUser(null);
@@ -49,7 +61,6 @@ export default function UserPage() {
   // Check follow status
   useEffect(() => {
     if (!id || !currentUser) return;
-
     const checkFollowing = async () => {
       try {
         const res = await fetch(
@@ -62,7 +73,6 @@ export default function UserPage() {
         console.error("Error checking follow status:", err);
       }
     };
-
     checkFollowing();
   }, [id, currentUser]);
 
@@ -72,7 +82,6 @@ export default function UserPage() {
       setFavoritedIds(new Set());
       return;
     }
-
     const fetchFavorites = async () => {
       try {
         const res = await fetch(
@@ -85,7 +94,6 @@ export default function UserPage() {
         console.error("❌ Error loading favorite IDs:", err);
       }
     };
-
     fetchFavorites();
   }, [currentUser]);
 
@@ -95,7 +103,6 @@ export default function UserPage() {
       setCartIds(new Set());
       return;
     }
-
     const fetchCart = async () => {
       try {
         const res = await fetch(
@@ -108,38 +115,68 @@ export default function UserPage() {
         console.error("❌ Error loading cart IDs:", err);
       }
     };
-
     fetchCart();
   }, [currentUser]);
 
   const handleFollowToggle = async () => {
     if (!id || !currentUser) return;
-
     const method = isFollowing ? "DELETE" : "POST";
-
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${id}/follow`, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: currentUser.id }),
       });
-
       if (!res.ok) throw new Error("Failed to follow/unfollow");
-
       setIsFollowing(!isFollowing);
     } catch (err) {
       console.error("Error toggling follow:", err);
     }
   };
 
+  // Upload profile image to Supabase
+  const uploadProfileImage = async (file: File) => {
+    if (!currentUser) return;
+    const path = `${currentUser.id}/profile/${Date.now()}-${slugify(file.name)}`;
+    const { error } = await supabase.storage.from("images").upload(path, file);
+    if (error) {
+      console.error("Upload error:", error);
+      return;
+    }
+    const { data: pub } = supabase.storage.from("images").getPublicUrl(path);
+    if (pub?.publicUrl) {
+      setForm((f) => ({ ...f, profileImage: pub.publicUrl }));
+    }
+  };
+
+  const handleSave = async () => {
+    if (!user || !currentUser) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          username: form.username,
+          bio: form.bio,
+          profileImage: form.profileImage,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to update profile");
+      const updated = await res.json();
+      setUser(updated);
+      setEditing(false);
+    } catch (err) {
+      console.error("❌ Error updating profile:", err);
+    }
+  };
+
   const filteredProducts = useMemo(() => {
     if (!user) return [];
-
     let filtered =
       mode === "all"
         ? user.products || []
         : (user.products || []).filter((p) => p.productType === mode);
-
     if (sort === "price") {
       filtered = [...filtered].sort((a, b) =>
         order === "asc" ? a.price - b.price : b.price - a.price
@@ -149,7 +186,6 @@ export default function UserPage() {
         order === "asc" ? a.productID - b.productID : b.productID - a.productID
       );
     }
-
     return filtered;
   }, [user, mode, sort, order]);
 
@@ -161,20 +197,88 @@ export default function UserPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <img
-            src={user.profileImage}
-            alt={user.username}
-            className="w-20 h-20 rounded-full object-cover"
-          />
+          {editing ? (
+            <div>
+              <input
+                id="profile-image-input"
+                type="file"
+                accept="image/*"
+                onChange={(e) => e.target.files && uploadProfileImage(e.target.files[0])}
+                className="sr-only"
+              />
+              <label
+                htmlFor="profile-image-input"
+                className="inline-block cursor-pointer rounded bg-blue-600 px-3 py-2 text-white hover:bg-blue-700"
+              >
+                Choose Profile Image
+              </label>
+              {form.profileImage && (
+                <img
+                  src={form.profileImage}
+                  alt="preview"
+                  className="mt-2 w-20 h-20 rounded-full object-cover"
+                />
+              )}
+            </div>
+          ) : (
+            <img
+              src={user.profileImage}
+              alt={user.username}
+              className="w-20 h-20 rounded-full object-cover"
+            />
+          )}
+
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {user.username}
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">{user.bio}</p>
+            {editing ? (
+              <input
+                type="text"
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                className="border rounded p-1 text-lg font-bold"
+              />
+            ) : (
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                {user.username}
+              </h1>
+            )}
+
+            {editing ? (
+              <textarea
+                value={form.bio}
+                onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                className="border rounded p-1 mt-1 w-full"
+              />
+            ) : (
+              <p className="text-gray-600 dark:text-gray-400">{user.bio}</p>
+            )}
           </div>
         </div>
 
-        {currentUser?.id !== user.id && (
+        {isOwnProfile ? (
+          editing ? (
+            <div className="flex gap-2">
+              <button
+                onClick={handleSave}
+                className="px-4 py-2 bg-green-500 text-white rounded"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setEditing(false)}
+                className="px-4 py-2 bg-gray-400 text-white rounded"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setEditing(true)}
+              className="px-4 py-2 bg-blue-500 text-white rounded"
+            >
+              Edit Profile
+            </button>
+          )
+        ) : (
           <button
             onClick={handleFollowToggle}
             className={`px-4 py-2 rounded-xl text-white transition ${
@@ -191,7 +295,6 @@ export default function UserPage() {
       {/* Creations */}
       <div className="border-t pt-6">
         <h2 className="text-xl font-semibold mb-4">Creations</h2>
-
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <ShopFilter mode={mode} onChange={setMode} />
           <ShopSort
@@ -203,7 +306,6 @@ export default function UserPage() {
             }}
           />
         </div>
-
         <div className="mt-4">
           {filteredProducts.length === 0 ? (
             <p className="text-gray-600 dark:text-gray-400">
