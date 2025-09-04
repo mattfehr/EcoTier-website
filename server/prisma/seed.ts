@@ -36,7 +36,7 @@ async function main() {
     {
       name: "EcoTower Pro",
       price: 199.99,
-      productType: "towers",
+      productType: "TOWERS", // ✅ Prisma enum key
       creatorID: users[0].id,
       imageURL: "https://via.placeholder.com/600x400",
       public: true,
@@ -45,7 +45,7 @@ async function main() {
     {
       name: "Herb Module",
       price: 49.99,
-      productType: "modules",
+      productType: "MODULES", // ✅ Prisma enum key
       creatorID: users[1].id,
       imageURL: "https://via.placeholder.com/600x400",
       public: true,
@@ -54,7 +54,7 @@ async function main() {
     {
       name: "SunShield Add-on",
       price: 29.0,
-      productType: "addons",
+      productType: "ADDONS", // ✅ Prisma enum key
       creatorID: users[0].id,
       imageURL: "https://via.placeholder.com/600x400",
       public: true,

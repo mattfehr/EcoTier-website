@@ -116,9 +116,9 @@ model Comment {
 }
 
 enum ProductType {
-  TOWERS
-  MODULES
-  ADDONS
+  TOWERS  @map("towers")
+  MODULES @map("modules")
+  ADDONS  @map("addons")
 }
 
 enum ModelFileType {

@@ -13,8 +13,6 @@ type ProductWithCreator = Prisma.ProductGetPayload<{
 }>;
 
 // ========== SHOP PRODUCTS ==========
-// GET /products?sort=price&order=asc
-// Always returns public products
 router.get("/", async (req, res) => {
   try {
     const { sort = "new", order = "desc" } = req.query as Record<string, string>;
@@ -48,8 +46,6 @@ router.get("/", async (req, res) => {
       createTime: p.createTime.toISOString(),
       updateTime: p.updateTime.toISOString(),
       PIN: p.PIN ?? undefined,
-
-      // ✅ model fields
       modelURL: p.modelURL ?? undefined,
       modelFileType:
         p.modelFileType === "THREE_MF"
@@ -68,8 +64,6 @@ router.get("/", async (req, res) => {
 });
 
 // ========== USER LIBRARY ==========
-// GET /products/library/:userID
-// Returns ALL products by this user (public + private)
 router.get("/library/:userID", async (req, res) => {
   try {
     const { userID } = req.params;
@@ -99,8 +93,6 @@ router.get("/library/:userID", async (req, res) => {
       createTime: p.createTime.toISOString(),
       updateTime: p.updateTime.toISOString(),
       PIN: p.PIN ?? undefined,
-
-      // ✅ model fields
       modelURL: p.modelURL ?? undefined,
       modelFileType:
         p.modelFileType === "THREE_MF"
@@ -119,7 +111,6 @@ router.get("/library/:userID", async (req, res) => {
 });
 
 // ========== INDIVIDUAL PRODUCT ==========
-// GET /products/:id?userID=uuid
 router.get("/:id", async (req, res) => {
   const id = Number(req.params.id);
   const { userID } = req.query as { userID?: string };
@@ -131,7 +122,7 @@ router.get("/:id", async (req, res) => {
       productID: id,
       OR: [
         { public: true },
-        ...(userID ? [{ creatorID: userID }] : []), // allow if user owns it
+        ...(userID ? [{ creatorID: userID }] : []),
       ],
     },
     include: {
@@ -158,8 +149,6 @@ router.get("/:id", async (req, res) => {
     createTime: product.createTime.toISOString(),
     updateTime: product.updateTime.toISOString(),
     PIN: product.PIN ?? undefined,
-
-    // ✅ model fields
     modelURL: product.modelURL ?? undefined,
     modelFileType:
       product.modelFileType === "THREE_MF"
@@ -174,7 +163,6 @@ router.get("/:id", async (req, res) => {
 });
 
 // ========== CREATE PRODUCT ==========
-// POST /products
 router.post("/", async (req, res) => {
   try {
     const { userID, name, productType, price, description, imageURL, public: isPublic, PIN } =
@@ -188,7 +176,7 @@ router.post("/", async (req, res) => {
     const product = await prisma.product.create({
       data: {
         name,
-        productType,
+        productType: productType.toUpperCase(), // 🔹 convert to Prisma enum key
         price: Number(price),
         description,
         imageURL,
@@ -206,7 +194,6 @@ router.post("/", async (req, res) => {
 });
 
 // ========== UPDATE PRODUCT ==========
-// PUT /products/:id
 router.put("/:id", async (req, res) => {
   try {
     const { userID, name, price, productType, description, imageURL, public: isPublic, PIN } =
@@ -225,7 +212,7 @@ router.put("/:id", async (req, res) => {
       data: {
         ...(name !== undefined && { name }),
         ...(price !== undefined && { price: Number(price) }),
-        ...(productType !== undefined && { productType }),
+        ...(productType !== undefined && { productType: productType.toUpperCase() }), // 🔹 convert
         ...(description !== undefined && { description }),
         ...(imageURL !== undefined && { imageURL }),
         ...(isPublic !== undefined && { public: isPublic }),
@@ -243,7 +230,6 @@ router.put("/:id", async (req, res) => {
 export default router;
 
 // ========== DELETE PRODUCT ==========
-// DELETE /products/:id
 router.delete("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -265,10 +251,10 @@ router.delete("/:id", async (req, res) => {
 });
 
 // ========== UPDATE MODEL FILE ==========
-// PATCH /products/:id/model
 router.patch("/:id/model", async (req, res) => {
   try {
-    const { userID, modelURL, modelFileType, modelSizeBytes, modelFilename, modelPreviewURL } = req.body;
+    const { userID, modelURL, modelFileType, modelSizeBytes, modelFilename, modelPreviewURL } =
+      req.body;
 
     if (!userID) return res.status(401).json({ error: "Missing userID" });
 
