@@ -7,7 +7,9 @@ const router = Router();
 router.get("/:productID", async (req, res) => {
   try {
     const productID = Number(req.params.productID);
-    if (Number.isNaN(productID)) return res.status(400).json({ error: "Invalid product ID" });
+    if (Number.isNaN(productID)) {
+      return res.status(400).json({ error: "Invalid product ID" });
+    }
 
     const comments = await prisma.comment.findMany({
       where: { productID },
@@ -18,11 +20,12 @@ router.get("/:productID", async (req, res) => {
     });
 
     const shaped = comments.map((c) => ({
-      id: `${c.userID}-${c.productID}-${c.postTime.getTime()}`,
+      id: c.id,
       userID: c.userID,
       username: c.user.username,
       profileImage: c.user.profileImage ?? "/default-avatar.png",
       content: c.content,
+      rating: c.rating ?? null,
       postTime: c.postTime.toISOString(),
     }));
 
@@ -36,7 +39,7 @@ router.get("/:productID", async (req, res) => {
 // Post a new comment
 router.post("/", async (req, res) => {
   try {
-    const { userID, productID, content } = req.body;
+    const { userID, productID, content, rating } = req.body;
     if (!userID || !productID || !content) {
       return res.status(400).json({ error: "Missing fields" });
     }
@@ -44,8 +47,9 @@ router.post("/", async (req, res) => {
     const created = await prisma.comment.create({
       data: {
         userID,
-        productID,
+        productID: Number(productID),
         content,
+        rating, // optional
       },
       include: {
         user: { select: { id: true, username: true, profileImage: true } },
@@ -53,11 +57,12 @@ router.post("/", async (req, res) => {
     });
 
     res.status(201).json({
-      id: `${created.userID}-${created.productID}-${created.postTime.getTime()}`,
+      id: created.id,
       userID: created.userID,
       username: created.user.username,
       profileImage: created.user.profileImage ?? "/default-avatar.png",
       content: created.content,
+      rating: created.rating ?? null,
       postTime: created.postTime.toISOString(),
     });
   } catch (err) {
@@ -66,13 +71,44 @@ router.post("/", async (req, res) => {
   }
 });
 
-// (Optional) Delete a comment (only if owner)
-router.delete("/:productID/:userID", async (req, res) => {
+// Update a comment (owner only)
+router.patch("/:id", async (req, res) => {
   try {
-    const { productID, userID } = req.params;
-    await prisma.comment.delete({
-      where: { userID_productID: { userID, productID: Number(productID) } },
+    const { id } = req.params;
+    const { userID, content, rating } = req.body;
+
+    if (!userID || !content) {
+      return res.status(400).json({ error: "Missing fields" });
+    }
+
+    const updated = await prisma.comment.update({
+      where: { id: Number(id) },
+      data: { content, rating },
+      include: {
+        user: { select: { id: true, username: true, profileImage: true } },
+      },
     });
+
+    res.json({
+      id: updated.id,
+      userID: updated.userID,
+      username: updated.user.username,
+      profileImage: updated.user.profileImage ?? "/default-avatar.png",
+      content: updated.content,
+      rating: updated.rating ?? null,
+      postTime: updated.postTime.toISOString(),
+    });
+  } catch (err) {
+    console.error("Error updating comment:", err);
+    res.status(500).json({ error: "Failed to update comment" });
+  }
+});
+
+// Delete a comment (owner only)
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.comment.delete({ where: { id: Number(id) } });
     res.json({ success: true });
   } catch (err) {
     console.error("Error deleting comment:", err);

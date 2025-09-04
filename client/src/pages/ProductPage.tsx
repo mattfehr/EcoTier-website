@@ -31,6 +31,8 @@ export default function ProductPage() {
   // Comments state
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
 
   useEffect(() => {
     if (!id) return;
@@ -83,17 +85,12 @@ export default function ProductPage() {
 
   const toggleFavorite = async () => {
     if (!user || !product) return;
-
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/favorites/toggle`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userID: user.id, productID: product.productID }),
-        }
-      );
-
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites/toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userID: user.id, productID: product.productID }),
+      });
       if (!res.ok) throw new Error("Failed to toggle favorite");
       const data = await res.json();
       setIsFavorited(data.favorited);
@@ -104,7 +101,6 @@ export default function ProductPage() {
 
   const toggleCart = async () => {
     if (!user || !product) return;
-
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/toggle`, {
         method: "POST",
@@ -115,15 +111,11 @@ export default function ProductPage() {
           quantity,
         }),
       });
-
       if (!res.ok) throw new Error("Failed to toggle cart");
       const data = await res.json();
       setInCart(data.inCart);
       setQuantity(data.quantity || 1);
-
-      setCartCount((prev) =>
-        data.inCart ? prev + 1 : Math.max(0, prev - 1)
-      );
+      setCartCount((prev) => (data.inCart ? prev + 1 : Math.max(0, prev - 1)));
     } catch (err) {
       console.error("❌ Error toggling cart:", err);
     }
@@ -132,7 +124,6 @@ export default function ProductPage() {
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !product || !newComment.trim()) return;
-
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/comments`, {
         method: "POST",
@@ -143,7 +134,6 @@ export default function ProductPage() {
           content: newComment,
         }),
       });
-
       if (res.ok) {
         const added: Comment = await res.json();
         setComments((prev) => [added, ...prev]);
@@ -154,10 +144,42 @@ export default function ProductPage() {
     }
   };
 
+  const handleUpdateComment = async (id: string, content: string) => {
+    if (!user) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/comments/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userID: user.id, content }),
+      });
+      if (res.ok) {
+        const updated: Comment = await res.json();
+        setComments((prev) => prev.map((c) => (c.id === id ? updated : c)));
+        setEditingId(null);
+        setEditContent("");
+      }
+    } catch (err) {
+      console.error("❌ Error updating comment:", err);
+    }
+  };
+
+  const handleDeleteComment = async (id: string) => {
+    if (!user) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/comments/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setComments((prev) => prev.filter((c) => c.id !== id));
+      }
+    } catch (err) {
+      console.error("❌ Error deleting comment:", err);
+    }
+  };
+
   if (loading) {
     return <div className="p-6 text-gray-600 dark:text-gray-300">Loading product...</div>;
   }
-
   if (error || !product) {
     return <div className="p-6 text-red-500">Product not found.</div>;
   }
@@ -211,7 +233,6 @@ export default function ProductPage() {
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
             ${product.price.toFixed(2)}
           </p>
-
           <div className="flex items-center border rounded-xl overflow-hidden">
             <button
               className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -240,7 +261,6 @@ export default function ProductPage() {
             <ShoppingCart size={20} />
             {inCart ? "Remove" : "Add to Cart"}
           </button>
-
           <button
             onClick={toggleFavorite}
             className="p-3 rounded-xl border hover:bg-gray-100 dark:hover:bg-gray-700 transition transform hover:scale-110"
@@ -289,16 +309,61 @@ export default function ProductPage() {
         <div className="space-y-3">
           {comments.length === 0 && <p className="text-gray-500">No comments yet.</p>}
           {comments.map((c) => (
-            <div key={c.id} className="flex gap-3 p-3 border rounded-lg bg-gray-50 dark:bg-gray-900">
+            <div
+              key={c.id}
+              className="flex gap-3 p-3 border rounded-lg bg-gray-50 dark:bg-gray-900"
+            >
               <img
                 src={c.profileImage || "/default-avatar.png"}
                 alt={c.username}
                 className="w-10 h-10 rounded-full object-cover"
               />
-              <div>
+              <div className="flex-1">
                 <p className="font-semibold">{c.username}</p>
-                <p className="text-sm text-gray-500">{new Date(c.postTime).toLocaleString()}</p>
-                <p className="mt-1">{c.content}</p>
+                <p className="text-sm text-gray-500">
+                  {new Date(c.postTime).toLocaleString()}
+                </p>
+
+                {editingId === c.id ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleUpdateComment(c.id, editContent);
+                    }}
+                    className="mt-1 flex gap-2"
+                  >
+                    <input
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="flex-1 border p-1 rounded"
+                    />
+                    <button className="px-2 bg-blue-600 text-white rounded">
+                      Save
+                    </button>
+                  </form>
+                ) : (
+                  <p className="mt-1">{c.content}</p>
+                )}
+
+                {user?.id === c.userID && (
+                  <div className="flex gap-2 mt-1 text-sm">
+                    <button
+                      onClick={() => {
+                        setEditingId(c.id);
+                        setEditContent(c.content);
+                      }}
+                      className="text-blue-500 hover:underline"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteComment(c.id)}
+                      className="text-red-500 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}

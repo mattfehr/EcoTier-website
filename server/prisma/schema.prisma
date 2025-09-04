@@ -103,15 +103,16 @@ model OrderItem {
 }
 
 model Comment {
+  id        Int      @id @default(autoincrement())
   userID    String   @db.Uuid
   productID Int
   content   String
   postTime  DateTime @default(now())
+  rating    Int? // ⭐ rating 1–5 (nullable for backwards compatibility)
 
   user    User    @relation(fields: [userID], references: [id])
   product Product @relation(fields: [productID], references: [productID])
 
-  @@id([userID, productID])
   @@map("comment")
 }
 
