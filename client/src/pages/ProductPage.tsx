@@ -5,8 +5,17 @@ import type { Product } from "../../../shared/types/product";
 import { routes } from "../utils/routes";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
-// ✅ import ModelViewer
 import ModelViewer from "../components/ModelViewer";
+
+// Types for comments
+interface Comment {
+  id: string;
+  userID: string;
+  username: string;
+  profileImage?: string;
+  content: string;
+  postTime: string;
+}
 
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +27,10 @@ export default function ProductPage() {
   const [inCart, setInCart] = useState(false);
   const { user } = useAuth();
   const { setCartCount } = useCart();
+
+  // Comments state
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState("");
 
   useEffect(() => {
     if (!id) return;
@@ -49,6 +62,15 @@ export default function ProductPage() {
             setInCart(inCart);
             if (quantity) setQuantity(quantity);
           }
+        }
+
+        // fetch comments
+        const commentsRes = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/comments/${data.productID}`
+        );
+        if (commentsRes.ok) {
+          const c: Comment[] = await commentsRes.json();
+          setComments(c);
         }
       } catch (err) {
         console.error("Failed to load product:", err);
@@ -104,6 +126,31 @@ export default function ProductPage() {
       );
     } catch (err) {
       console.error("❌ Error toggling cart:", err);
+    }
+  };
+
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !product || !newComment.trim()) return;
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userID: user.id,
+          productID: product.productID,
+          content: newComment,
+        }),
+      });
+
+      if (res.ok) {
+        const added: Comment = await res.json();
+        setComments((prev) => [added, ...prev]);
+        setNewComment("");
+      }
+    } catch (err) {
+      console.error("❌ Error posting comment:", err);
     }
   };
 
@@ -218,10 +265,44 @@ export default function ProductPage() {
         </p>
       </section>
 
-      {/* Comments placeholder */}
+      {/* Comments */}
       <section>
         <h2 className="text-xl font-semibold mb-4">Comments</h2>
-        {/* ... */}
+        {user && (
+          <form onSubmit={handleSubmitComment} className="flex gap-2 mb-4">
+            <input
+              type="text"
+              placeholder="Write a comment..."
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              className="flex-1 border p-2 rounded"
+            />
+            <button
+              type="submit"
+              className="px-4 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Post
+            </button>
+          </form>
+        )}
+
+        <div className="space-y-3">
+          {comments.length === 0 && <p className="text-gray-500">No comments yet.</p>}
+          {comments.map((c) => (
+            <div key={c.id} className="flex gap-3 p-3 border rounded-lg bg-gray-50 dark:bg-gray-900">
+              <img
+                src={c.profileImage || "/default-avatar.png"}
+                alt={c.username}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+              <div>
+                <p className="font-semibold">{c.username}</p>
+                <p className="text-sm text-gray-500">{new Date(c.postTime).toLocaleString()}</p>
+                <p className="mt-1">{c.content}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
     </div>
   );

@@ -7,6 +7,7 @@ import userRouter from "./routes/userRoutes";
 import favoritesRouter from "./routes/favoritesRoutes"; 
 import cartRouter from "./routes/cartRoutes";
 import ordersRouter from "./routes/orderRoutes";
+import commentsRouter from "./routes/commentsRoutes"
 
 
 dotenv.config();
@@ -31,6 +32,7 @@ app.use("/api/users", userRouter);
 app.use("/api/favorites", favoritesRouter); 
 app.use("/api/cart", cartRouter);
 app.use("/api/orders", ordersRouter);
+app.use("/api/comments", commentsRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
