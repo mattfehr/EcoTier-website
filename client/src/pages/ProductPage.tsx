@@ -5,6 +5,8 @@ import type { Product } from "../../../shared/types/product";
 import { routes } from "../utils/routes";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
+// ✅ import ModelViewer
+import ModelViewer from "../components/ModelViewer";
 
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -121,6 +123,18 @@ export default function ProductPage() {
         alt={product.name}
         className="w-full h-80 object-cover rounded-xl shadow-md"
       />
+
+      {/* ✅ 3D Model Preview */}
+      {product.modelURL && product.modelFileType && (
+        <section>
+          <h2 className="text-xl font-semibold mb-2">3D Preview</h2>
+          <ModelViewer
+            url={product.modelURL}
+            fileType={product.modelFileType as "STL" | "OBJ" | "3MF" | "STEP"}
+            height={420}
+          />
+        </section>
+      )}
 
       {/* Core info */}
       <div className="space-y-3">

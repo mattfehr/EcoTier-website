@@ -5,33 +5,40 @@ import type { Product } from "@shared/types/product";
 
 const router = Router();
 
-// ✅ Toggle cart item (add or remove)
+// ✅ Add, update, or remove cart item
 router.post("/toggle", async (req, res) => {
   try {
     let { userID, productID, quantity = 1 } = req.body;
 
     if (!userID || !productID) {
-      return res
-        .status(400)
-        .json({ error: "userID and productID are required" });
+      return res.status(400).json({ error: "userID and productID are required" });
     }
 
     productID = Number(productID);
 
     const existing = await prisma.cartItem.findUnique({
-      where: {
-        userID_productID: { userID, productID },
-      },
+      where: { userID_productID: { userID, productID } },
     });
 
-    if (existing) {
-      await prisma.cartItem.delete({
-        where: {
-          userID_productID: { userID, productID },
-        },
-      });
+    if (quantity <= 0) {
+      // remove item
+      if (existing) {
+        await prisma.cartItem.delete({
+          where: { userID_productID: { userID, productID } },
+        });
+      }
       return res.json({ inCart: false, quantity: 0 });
+    }
+
+    if (existing) {
+      // update item quantity
+      const updated = await prisma.cartItem.update({
+        where: { userID_productID: { userID, productID } },
+        data: { quantity },
+      });
+      return res.json({ inCart: true, quantity: updated.quantity });
     } else {
+      // add new
       const created = await prisma.cartItem.create({
         data: { userID, productID, quantity },
       });
@@ -116,8 +123,7 @@ router.get("/:userID", async (req, res) => {
         id: c.product.creator.id,
         username: c.product.creator.username,
         profileImage:
-          c.product.creator.profileImage ??
-          "https://via.placeholder.com/40x40",
+          c.product.creator.profileImage ?? "https://via.placeholder.com/40x40",
       },
       quantity: c.quantity,
     }));
