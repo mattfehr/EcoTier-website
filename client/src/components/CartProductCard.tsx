@@ -9,65 +9,27 @@ type CartItem = Product & { quantity: number };
 
 type Props = {
   item: CartItem;
-  onQuantityChange: (productID: number, newQuantity: number) => void;
-  onRemove: (productID: number) => void;
 };
 
-export default function CartProductCard({ item, onQuantityChange, onRemove }: Props) {
+export default function CartProductCard({ item }: Props) {
   const { user } = useAuth();
-  const { setCartCount } = useCart();
+  const { cartItems, updateQuantity, removeFromCart } = useCart();
   const navigate = useNavigate();
 
-  const updateQuantity = async (delta: number) => {
+  // ✅ Pull latest quantity from context
+  const liveItem = cartItems.find((i) => i.productID === item.productID);
+  const quantity = liveItem?.quantity ?? item.quantity;
+
+  const handleUpdateQuantity = async (delta: number) => {
     if (!user) return;
-    const newQuantity = item.quantity + delta;
-
-    if (newQuantity < 1) return; // don’t send 0 from the minus button
-
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/toggle`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userID: user.id,
-          productID: item.productID,
-          quantity: newQuantity,
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (!data.inCart) {
-          onRemove(item.productID);
-          setCartCount((prev) => Math.max(0, prev - 1));
-        } else {
-          onQuantityChange(item.productID, data.quantity);
-        }
-      }
-    } catch (err) {
-      console.error("❌ Error updating cart item:", err);
-    }
+    const newQuantity = quantity + delta;
+    if (newQuantity < 1) return; // don’t send 0 from minus button
+    await updateQuantity(item.productID, newQuantity);
   };
 
-  const removeItem = async () => {
+  const handleRemove = async () => {
     if (!user) return;
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/toggle`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userID: user.id,
-          productID: item.productID,
-          quantity: 0,
-        }),
-      });
-
-      if (res.ok) {
-        onRemove(item.productID);
-      }
-    } catch (err) {
-      console.error("❌ Error removing cart item:", err);
-    }
+    await removeFromCart(item.productID);
   };
 
   return (
@@ -93,15 +55,15 @@ export default function CartProductCard({ item, onQuantityChange, onRemove }: Pr
         onClick={(e) => e.stopPropagation()} // prevent navigation
       >
         <button
-          onClick={() => updateQuantity(-1)}
-          disabled={item.quantity <= 1} // 🔹 disable minus at 1
+          onClick={() => handleUpdateQuantity(-1)}
+          disabled={quantity <= 1}
           className="p-2 border rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
         >
           <Minus size={16} />
         </button>
-        <span>{item.quantity}</span>
+        <span>{quantity}</span>
         <button
-          onClick={() => updateQuantity(1)}
+          onClick={() => handleUpdateQuantity(1)}
           className="p-2 border rounded hover:bg-gray-100 dark:hover:bg-gray-700"
         >
           <Plus size={16} />
@@ -112,7 +74,7 @@ export default function CartProductCard({ item, onQuantityChange, onRemove }: Pr
       <button
         onClick={(e) => {
           e.stopPropagation();
-          removeItem();
+          handleRemove();
         }}
         className="ml-4 text-red-500 hover:text-red-700"
       >

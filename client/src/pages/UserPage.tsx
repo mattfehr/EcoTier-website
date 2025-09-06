@@ -14,13 +14,12 @@ type Mode = "all" | ProductType;
 
 export default function UserPage() {
   const { id } = useParams<{ id: string }>();
-  const { user: currentUser, refreshUser } = useAuth(); // 👈 include refreshUser
+  const { user: currentUser, refreshUser } = useAuth();
   const [user, setUser] = useState<UserPublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
 
   const [favoritedIds, setFavoritedIds] = useState<Set<number>>(new Set());
-  const [cartIds, setCartIds] = useState<Set<number>>(new Set());
 
   const [mode, setMode] = useState<Mode>("all");
   const [sort, setSort] = useState<"new" | "price">("new");
@@ -97,27 +96,6 @@ export default function UserPage() {
     fetchFavorites();
   }, [currentUser]);
 
-  // Bulk fetch cart IDs
-  useEffect(() => {
-    if (!currentUser) {
-      setCartIds(new Set());
-      return;
-    }
-    const fetchCart = async () => {
-      try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/cart/${currentUser.id}/ids`
-        );
-        if (!res.ok) throw new Error("Failed to fetch cart IDs");
-        const ids: number[] = await res.json();
-        setCartIds(new Set(ids));
-      } catch (err) {
-        console.error("❌ Error loading cart IDs:", err);
-      }
-    };
-    fetchCart();
-  }, [currentUser]);
-
   const handleFollowToggle = async () => {
     if (!id || !currentUser) return;
     const method = isFollowing ? "DELETE" : "POST";
@@ -167,7 +145,7 @@ export default function UserPage() {
       setUser(updated);
       setEditing(false);
 
-      await refreshUser(); // 👈 refresh AuthContext so header updates
+      await refreshUser(); // refresh AuthContext so header updates
     } catch (err) {
       console.error("❌ Error updating profile:", err);
     }
@@ -320,7 +298,6 @@ export default function UserPage() {
                   key={p.productID}
                   {...p}
                   isFavorited={favoritedIds.has(p.productID)}
-                  isInCart={cartIds.has(p.productID)}
                 />
               ))}
             </div>

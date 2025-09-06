@@ -26,9 +26,8 @@ export default function ProductPage() {
   const [error, setError] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [isFavorited, setIsFavorited] = useState(false);
-  const [inCart, setInCart] = useState(false);
   const { user } = useAuth();
-  const { setCartCount } = useCart();
+  const { cartItems, addToCart, removeFromCart } = useCart();
 
   // Comments + ratings state
   const [comments, setComments] = useState<Comment[]>([]);
@@ -36,6 +35,11 @@ export default function ProductPage() {
   const [reviewCount, setReviewCount] = useState<number>(0);
   const [newComment, setNewComment] = useState("");
   const [newRating, setNewRating] = useState<number>(5);
+
+  // ✅ Derive inCart from context
+  const inCart = product
+    ? cartItems.some((i) => i.productID === product.productID)
+    : false;
 
   useEffect(() => {
     if (!id) return;
@@ -56,16 +60,6 @@ export default function ProductPage() {
           if (favRes.ok) {
             const { favorited } = await favRes.json();
             setIsFavorited(favorited);
-          }
-
-          // preload cart
-          const cartRes = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/cart/${user.id}/contains/${data.productID}`
-          );
-          if (cartRes.ok) {
-            const { inCart, quantity } = await cartRes.json();
-            setInCart(inCart);
-            if (quantity) setQuantity(quantity);
           }
         }
 
@@ -115,23 +109,10 @@ export default function ProductPage() {
 
   const toggleCart = async () => {
     if (!user || !product) return;
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/toggle`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userID: user.id,
-          productID: product.productID,
-          quantity,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to toggle cart");
-      const data = await res.json();
-      setInCart(data.inCart);
-      setQuantity(data.quantity || 1);
-      setCartCount((prev) => (data.inCart ? prev + 1 : Math.max(0, prev - 1)));
-    } catch (err) {
-      console.error("❌ Error toggling cart:", err);
+    if (inCart) {
+      await removeFromCart(product.productID);
+    } else {
+      await addToCart(product.productID, quantity);
     }
   };
 

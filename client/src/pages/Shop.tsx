@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
 import ProductCard from "../components/ProductCard";
 import ShopFilter from "../components/ShopFilter";
 import ShopSort from "../components/ShopSort";
@@ -9,6 +10,7 @@ type Mode = "all" | ProductType;
 
 export default function Shop() {
   const { user } = useAuth();
+  const { cartItems } = useCart();
   const [mode, setMode] = useState<Mode>("all");
   const [sort, setSort] = useState<"new" | "price">("new");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
@@ -16,7 +18,6 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [favoritedIds, setFavoritedIds] = useState<Set<number>>(new Set());
-  const [cartIds, setCartIds] = useState<Set<number>>(new Set());
 
   // ✅ Fetch products
   useEffect(() => {
@@ -61,29 +62,6 @@ export default function Shop() {
     fetchFavorites();
   }, [user]);
 
-  // ✅ Bulk fetch cart product IDs
-  useEffect(() => {
-    if (!user) {
-      setCartIds(new Set());
-      return;
-    }
-
-    const fetchCart = async () => {
-      try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/cart/${user.id}/ids`
-        );
-        if (!res.ok) throw new Error("Failed to fetch cart IDs");
-        const ids: number[] = await res.json();
-        setCartIds(new Set(ids));
-      } catch (err) {
-        console.error("❌ Error loading cart IDs:", err);
-      }
-    };
-
-    fetchCart();
-  }, [user]);
-
   // ✅ Apply filter client-side
   const filtered = useMemo(() => {
     return mode === "all"
@@ -125,7 +103,6 @@ export default function Shop() {
               key={p.productID}
               {...p}
               isFavorited={favoritedIds.has(p.productID)}
-              isInCart={cartIds.has(p.productID)}
             />
           ))}
         </div>

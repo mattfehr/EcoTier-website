@@ -8,7 +8,6 @@ import { useCart } from "../context/CartContext";
 
 type ProductCardProps = Product & {
   isFavorited?: boolean;
-  isInCart?: boolean;
 };
 
 export default function ProductCard({
@@ -19,68 +18,43 @@ export default function ProductCard({
   imageURL,
   productType,
   isFavorited: initialFavorited,
-  isInCart: initialInCart,
 }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1);
   const [isFavorited, setIsFavorited] = useState(initialFavorited ?? false);
-  const [inCart, setInCart] = useState(initialInCart ?? false);
   const { user } = useAuth();
-  const { setCartCount } = useCart();
+  const { cartItems, addToCart, removeFromCart } = useCart();
 
+  // ✅ Derive inCart from context
+  const inCart = cartItems.some((i) => i.productID === productID);
+
+  // preload favorite (unchanged)
   useEffect(() => {
-    if (!user) return;
-
-    if (initialFavorited === undefined) {
-      const checkFavorite = async () => {
-        try {
-          const res = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/favorites/${user.id}/contains/${productID}`
-          );
-          if (res.ok) {
-            const { favorited } = await res.json();
-            setIsFavorited(favorited);
-          }
-        } catch (err) {
-          console.error("❌ Error checking favorite:", err);
+    if (!user || initialFavorited !== undefined) return;
+    const checkFavorite = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/favorites/${user.id}/contains/${productID}`
+        );
+        if (res.ok) {
+          const { favorited } = await res.json();
+          setIsFavorited(favorited);
         }
-      };
-      checkFavorite();
-    }
-
-    if (initialInCart === undefined) {
-      const checkCart = async () => {
-        try {
-          const res = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/cart/${user.id}/contains/${productID}`
-          );
-          if (res.ok) {
-            const { inCart, quantity } = await res.json();
-            setInCart(inCart);
-            if (quantity) setQuantity(quantity);
-          }
-        } catch (err) {
-          console.error("❌ Error checking cart:", err);
-        }
-      };
-      checkCart();
-    }
-  }, [user, productID, initialFavorited, initialInCart]);
+      } catch (err) {
+        console.error("❌ Error checking favorite:", err);
+      }
+    };
+    checkFavorite();
+  }, [user, productID, initialFavorited]);
 
   const toggleFavorite = async () => {
     if (!user) return;
-
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/favorites/toggle`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userID: user.id, productID }),
-        }
-      );
-
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites/toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userID: user.id, productID }),
+      });
       if (!res.ok) throw new Error("Failed to toggle favorite");
-
       const data = await res.json();
       setIsFavorited(data.favorited);
     } catch (err) {
@@ -88,34 +62,12 @@ export default function ProductCard({
     }
   };
 
-  const toggleCart = async () => {
+  const handleCartToggle = async () => {
     if (!user) return;
-
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/toggle`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userID: user.id,
-          productID,
-          quantity,
-        }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Failed to toggle cart: ${text}`);
-      }
-
-      const data = await res.json();
-      setInCart(data.inCart);
-      setQuantity(data.quantity || 1);
-
-      setCartCount((prev) =>
-        data.inCart ? prev + 1 : Math.max(0, prev - 1)
-      );
-    } catch (err) {
-      console.error("❌ Error toggling cart:", err);
+    if (inCart) {
+      await removeFromCart(productID);
+    } else {
+      await addToCart(productID, quantity);
     }
   };
 
@@ -177,7 +129,7 @@ export default function ProductCard({
 
         <div className="flex justify-between mt-2">
           <button
-            onClick={toggleCart}
+            onClick={handleCartToggle}
             className={`flex items-center gap-2 px-3 py-2 rounded-xl text-white transition ${
               inCart
                 ? "bg-red-500 hover:bg-red-600"
