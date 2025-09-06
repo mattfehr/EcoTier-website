@@ -5,21 +5,21 @@ type AuthContextType = {
   user: any | null;
   loading: boolean;
   signOut: () => Promise<void>;
-  refreshUser: () => Promise<void>; // 👈 added
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   signOut: async () => {},
-  refreshUser: async () => {}, // 👈 added
+  refreshUser: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔹 Extracted fetcher into reusable function
+  // 🔹 Shared function to fetch user with metadata
   const refreshUser = async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const sessionUser = sessionData.session?.user ?? null;
@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (!error && userData) {
-        setUser({ ...sessionUser, ...userData });
+        setUser({ ...sessionUser, ...userData }); // merge metadata + auth
       } else {
         console.warn("⚠️ Could not fetch user metadata from 'users' table:", error);
         setUser(sessionUser);
@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        setUser(session.user);
+        refreshUser(); // 👈 always fetch full user row
       } else {
         setUser(null);
       }
