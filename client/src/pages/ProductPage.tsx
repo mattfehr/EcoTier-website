@@ -1,8 +1,23 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Heart, ShoppingCart, Minus, Plus } from "lucide-react";
+import { Heart, ShoppingCart, Minus, Plus, Star } from "lucide-react";
 import type { Product } from "../../../shared/types/product";
-import { routes } from "../utils/routes"; // ✅ import route helpers
+import { routes } from "../utils/routes";
+import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
+import ModelViewer from "../components/ModelViewer";
+import CommentCard from "../components/CommentCard";
+
+// Types for comments
+interface Comment {
+  id: string;
+  userID: string;
+  username: string;
+  profileImage?: string;
+  content: string;
+  postTime: string;
+  rating: number;
+}
 
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -11,6 +26,20 @@ export default function ProductPage() {
   const [error, setError] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [isFavorited, setIsFavorited] = useState(false);
+  const { user } = useAuth();
+  const { cartItems, addToCart, removeFromCart } = useCart();
+
+  // Comments + ratings state
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [averageRating, setAverageRating] = useState<number | null>(null);
+  const [reviewCount, setReviewCount] = useState<number>(0);
+  const [newComment, setNewComment] = useState("");
+  const [newRating, setNewRating] = useState<number>(5);
+
+  // ✅ Derive inCart from context
+  const inCart = product
+    ? cartItems.some((i) => i.productID === product.productID)
+    : false;
 
   useEffect(() => {
     if (!id) return;
@@ -20,8 +49,39 @@ export default function ProductPage() {
         setLoading(true);
         const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const data: Product = await res.json();
         setProduct(data);
+
+        if (user) {
+          // preload favorite
+          const favRes = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/favorites/${user.id}/contains/${data.productID}`
+          );
+          if (favRes.ok) {
+            const { favorited } = await favRes.json();
+            setIsFavorited(favorited);
+          }
+        }
+
+        // fetch comments
+        const commentsRes = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/comments/${data.productID}`
+        );
+        if (commentsRes.ok) {
+          const c: Comment[] = await commentsRes.json();
+          setComments(c);
+
+          // ⭐ compute average rating from comments (ignore nulls)
+          const ratings = c.map((x) => x.rating).filter((r): r is number => r != null);
+          if (ratings.length > 0) {
+            const avg = ratings.reduce((sum, r) => sum + r, 0) / ratings.length;
+            setAverageRating(avg);
+            setReviewCount(ratings.length);
+          } else {
+            setAverageRating(null);
+            setReviewCount(0);
+          }
+        }
       } catch (err) {
         console.error("Failed to load product:", err);
         setError("Unable to load product.");
@@ -29,12 +89,92 @@ export default function ProductPage() {
         setLoading(false);
       }
     })();
-  }, [id]);
+  }, [id, user]);
+
+  const toggleFavorite = async () => {
+    if (!user || !product) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites/toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userID: user.id, productID: product.productID }),
+      });
+      if (!res.ok) throw new Error("Failed to toggle favorite");
+      const data = await res.json();
+      setIsFavorited(data.favorited);
+    } catch (err) {
+      console.error("❌ Error toggling favorite:", err);
+    }
+  };
+
+  const toggleCart = async () => {
+    if (!user || !product) return;
+    if (inCart) {
+      await removeFromCart(product.productID);
+    } else {
+      await addToCart(product.productID, quantity);
+    }
+  };
+
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !product || !newComment.trim()) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userID: user.id,
+          productID: product.productID,
+          content: newComment,
+          rating: newRating,
+        }),
+      });
+      if (res.ok) {
+        const added: Comment = await res.json();
+        setComments((prev) => [added, ...prev]);
+        setNewComment("");
+        setNewRating(5);
+      }
+    } catch (err) {
+      console.error("❌ Error posting comment:", err);
+    }
+  };
+
+  const handleUpdateComment = async (id: string, content: string, rating: number) => {
+    if (!user) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/comments/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userID: user.id, content, rating }),
+      });
+      if (res.ok) {
+        const updated: Comment = await res.json();
+        setComments((prev) => prev.map((c) => (c.id === id ? updated : c)));
+      }
+    } catch (err) {
+      console.error("❌ Error updating comment:", err);
+    }
+  };
+
+  const handleDeleteComment = async (id: string) => {
+    if (!user) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/comments/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setComments((prev) => prev.filter((c) => c.id !== id));
+      }
+    } catch (err) {
+      console.error("❌ Error deleting comment:", err);
+    }
+  };
 
   if (loading) {
     return <div className="p-6 text-gray-600 dark:text-gray-300">Loading product...</div>;
   }
-
   if (error || !product) {
     return <div className="p-6 text-red-500">Product not found.</div>;
   }
@@ -43,10 +183,22 @@ export default function ProductPage() {
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       {/* Image */}
       <img
-        src={product.imageUrl}
+        src={product.imageURL || "/placeholder.png"}
         alt={product.name}
         className="w-full h-80 object-cover rounded-xl shadow-md"
       />
+
+      {/* ✅ 3D Model Preview */}
+      {product.modelURL && product.modelFileType && (
+        <section>
+          <h2 className="text-xl font-semibold mb-2">3D Preview</h2>
+          <ModelViewer
+            url={product.modelURL}
+            fileType={product.modelFileType as "STL" | "OBJ" | "3MF" | "STEP"}
+            height={420}
+          />
+        </section>
+      )}
 
       {/* Core info */}
       <div className="space-y-3">
@@ -54,27 +206,52 @@ export default function ProductPage() {
           {product.name}
         </h1>
 
-        {/* ✅ Creator section is now a link */}
-        <Link
-          to={routes.user(product.creator.id)}
-          className="flex items-center gap-2 hover:opacity-80 transition"
-        >
-          <img
-            src={product.creator.profileImage}
-            alt={product.creator.name}
-            className="w-10 h-10 rounded-full object-cover"
-          />
-          <p className="text-gray-700 dark:text-gray-300">
-            {product.creator.name}
-          </p>
-        </Link>
+        {/* ⭐ Average rating */}
+        {reviewCount > 0 ? (
+          <div className="flex items-center gap-2">
+            <div className="flex">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Star
+                  key={i}
+                  size={18}
+                  className={
+                    averageRating && i <= Math.round(averageRating)
+                      ? "text-yellow-400 fill-yellow-400"
+                      : "text-gray-300"
+                  }
+                />
+              ))}
+            </div>
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {averageRating?.toFixed(1)} ({reviewCount} reviews)
+            </span>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">No reviews yet</p>
+        )}
+
+        {/* Creator */}
+        {product.creator && (
+          <Link
+            to={routes.user(product.creator.id)}
+            className="flex items-center gap-2 hover:opacity-80 transition"
+          >
+            <img
+              src={product.creator.profileImage || "/default-avatar.png"}
+              alt={product.creator.username}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+            <p className="text-gray-700 dark:text-gray-300">
+              {product.creator.username}
+            </p>
+          </Link>
+        )}
 
         {/* Price + Quantity */}
         <div className="flex items-center gap-6">
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
             ${product.price.toFixed(2)}
           </p>
-
           <div className="flex items-center border rounded-xl overflow-hidden">
             <button
               className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -94,11 +271,17 @@ export default function ProductPage() {
 
         {/* Actions */}
         <div className="flex gap-4 mt-4">
-          <button className="flex items-center gap-2 px-5 py-3 rounded-xl bg-green-500 text-white hover:bg-green-600">
-            <ShoppingCart size={20} /> Add to Cart
+          <button
+            onClick={toggleCart}
+            className={`flex items-center gap-2 px-5 py-3 rounded-xl text-white transition ${
+              inCart ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
+            }`}
+          >
+            <ShoppingCart size={20} />
+            {inCart ? "Remove" : "Add to Cart"}
           </button>
           <button
-            onClick={() => setIsFavorited(!isFavorited)}
+            onClick={toggleFavorite}
             className="p-3 rounded-xl border hover:bg-gray-100 dark:hover:bg-gray-700 transition transform hover:scale-110"
           >
             <Heart
@@ -121,36 +304,69 @@ export default function ProductPage() {
         </p>
       </section>
 
-      {/* Comments (still static for now) */}
+      {/* Comments */}
       <section>
         <h2 className="text-xl font-semibold mb-4">Comments</h2>
-        <div className="space-y-4">
-          <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl">
-            <p className="text-sm font-medium">Grace</p>
-            <p className="text-gray-700 dark:text-gray-300">
-              Love this design! Works great for herbs 🌿
-            </p>
-          </div>
-          <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl">
-            <p className="text-sm font-medium">Matthew</p>
-            <p className="text-gray-700 dark:text-gray-300">
-              Super modular and easy to set up.
-            </p>
-          </div>
+        {user && (
+          <form onSubmit={handleSubmitComment} className="flex flex-col gap-2 mb-4">
+            <div className="flex items-center gap-2">
+              {/* ⭐ Rating picker for new comment */}
+              <div className="flex">
+                {[1, 2, 3, 4, 5].map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setNewRating(r)}
+                    className="focus:outline-none"
+                    aria-label={`Set rating ${r}`}
+                  >
+                    <Star
+                      size={20}
+                      className={
+                        r <= newRating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                      }
+                    />
+                  </button>
+                ))}
+              </div>
+              <span className="text-sm text-gray-500">Your rating</span>
+            </div>
 
-          <form className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Write a comment..."
-              className="flex-1 px-4 py-2 rounded-xl border dark:bg-gray-800 dark:text-white"
-            />
-            <button
-              type="submit"
-              className="px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600"
-            >
-              Post
-            </button>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Write a comment..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="flex-1 border p-2 rounded"
+              />
+              <button
+                type="submit"
+                className="px-4 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Post
+              </button>
+            </div>
           </form>
+        )}
+
+        <div className="space-y-3">
+          {comments.length === 0 && <p className="text-gray-500">No comments yet.</p>}
+          {comments.map((c) => (
+            <CommentCard
+              key={c.id}
+              id={c.id}
+              userID={c.userID}
+              username={c.username}
+              profileImage={c.profileImage}
+              content={c.content}
+              postTime={c.postTime}
+              rating={c.rating}
+              currentUserID={user?.id}
+              onUpdate={handleUpdateComment}
+              onDelete={handleDeleteComment}
+            />
+          ))}
         </div>
       </section>
     </div>

@@ -1,58 +1,109 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Heart, ShoppingCart, Minus, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Product } from "../../../shared/types/product";
-import { routes } from "../utils/routes"; // adjust path if needed
+import { routes } from "../utils/routes";
+import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
 
-type ProductCardProps = Product;
+type ProductCardProps = Product & {
+  isFavorited?: boolean;
+};
 
 export default function ProductCard({
-  id,
+  productID,
   name,
   price,
   creator,
-  imageUrl,
+  imageURL,
   productType,
+  isFavorited: initialFavorited,
 }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1);
-  const [isFavorited, setIsFavorited] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(initialFavorited ?? false);
+  const { user } = useAuth();
+  const { cartItems, addToCart, removeFromCart } = useCart();
+
+  // ✅ Derive inCart from context
+  const inCart = cartItems.some((i) => i.productID === productID);
+
+  // preload favorite (unchanged)
+  useEffect(() => {
+    if (!user || initialFavorited !== undefined) return;
+    const checkFavorite = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/favorites/${user.id}/contains/${productID}`
+        );
+        if (res.ok) {
+          const { favorited } = await res.json();
+          setIsFavorited(favorited);
+        }
+      } catch (err) {
+        console.error("❌ Error checking favorite:", err);
+      }
+    };
+    checkFavorite();
+  }, [user, productID, initialFavorited]);
+
+  const toggleFavorite = async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites/toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userID: user.id, productID }),
+      });
+      if (!res.ok) throw new Error("Failed to toggle favorite");
+      const data = await res.json();
+      setIsFavorited(data.favorited);
+    } catch (err) {
+      console.error("❌ Error toggling favorite:", err);
+    }
+  };
+
+  const handleCartToggle = async () => {
+    if (!user) return;
+    if (inCart) {
+      await removeFromCart(productID);
+    } else {
+      await addToCart(productID, quantity);
+    }
+  };
 
   return (
     <div className="rounded-2xl shadow-md bg-white dark:bg-gray-800 overflow-hidden hover:shadow-lg transition">
-      {/* Product Image */}
-      <Link to={routes.product(id)}>
+      <Link to={routes.product(productID)}>
         <img
-          src={imageUrl}
+          src={imageURL || "/placeholder.png"}
           alt={name}
           className="w-full h-48 object-cover hover:opacity-90 transition"
         />
       </Link>
 
-      {/* Content */}
       <div className="p-4 flex flex-col gap-3">
-        {/* Product Name */}
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          <Link to={routes.product(id)} className="hover:underline">
+          <Link to={routes.product(productID)} className="hover:underline">
             {name}
           </Link>
         </h3>
 
-        {/* Creator Info (clickable avatar + name) */}
-        <Link
-          to={routes.user(creator.id)}
-          className="flex items-center gap-2 hover:opacity-80 transition"
-        >
-          <img
-            src={creator.profileImage}
-            alt={creator.name}
-            className="w-8 h-8 rounded-full object-cover"
-          />
-          <p className="text-sm text-gray-700 dark:text-gray-300">
-            {creator.name}
-          </p>
-        </Link>
+        {creator && (
+          <Link
+            to={routes.user(creator.id)}
+            className="flex items-center gap-2 hover:opacity-80 transition"
+          >
+            <img
+              src={creator.profileImage || "/default-avatar.png"}
+              alt={creator.username}
+              className="w-8 h-8 rounded-full object-cover"
+            />
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              {creator.username}
+            </p>
+          </Link>
+        )}
 
-        {/* Price + Quantity */}
         <div className="flex items-center justify-between">
           <p className="text-xl font-bold text-gray-900 dark:text-white">
             ${price.toFixed(2)}
@@ -76,14 +127,21 @@ export default function ProductCard({
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex justify-between mt-2">
-          <button className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-500 text-white hover:bg-green-600">
-            <ShoppingCart size={18} /> Add
+          <button
+            onClick={handleCartToggle}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-white transition ${
+              inCart
+                ? "bg-red-500 hover:bg-red-600"
+                : "bg-green-500 hover:bg-green-600"
+            }`}
+          >
+            <ShoppingCart size={18} />
+            {inCart ? "Remove" : "Add"}
           </button>
 
           <button
-            onClick={() => setIsFavorited(!isFavorited)}
+            onClick={toggleFavorite}
             className="p-2 rounded-xl border hover:bg-gray-100 dark:hover:bg-gray-700 transition transform hover:scale-110"
             aria-label="Toggle favorite"
           >

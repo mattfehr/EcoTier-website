@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import FAQ from "./pages/FAQ";
 import ProductPage from "./pages/ProductPage";
 import UserPage from "./pages/UserPage";
+import EditorPage from "./editor/EditorPage"; // ✅ import editor
 
 function App() {
   return (
@@ -28,6 +29,11 @@ function App() {
           <Route path={routes.faq} element={<FAQ />} />
           <Route path="product/:id" element={<ProductPage />} />
           <Route path="user/:id" element={<UserPage />} />
+
+          {/* ✅ new editor routes */}
+          <Route path={routes.editorNew} element={<EditorPage />} />
+          <Route path="editor/:id" element={<EditorPage />} />
+
           <Route path="*" element={<Navigate to={routes.home} replace />} />
         </Route>
       </Routes>

@@ -1,12 +1,14 @@
-// src/components/Header.tsx
+// src/components/Header.ts
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
 import betterlogo from "../assets/betterlogo.png";
 import { useAuth } from "../context/AuthContext";
-import { routes } from "../utils/routes"; // adjust path as needed
+import { routes } from "../utils/routes";
+import { useCart } from "../context/CartContext";
 
 export default function Header() {
   const { user, signOut } = useAuth();
+  const { cartCount } = useCart();
   const navigate = useNavigate();
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -19,7 +21,7 @@ export default function Header() {
     if (!confirmLogout) return;
 
     await signOut();
-    navigate(routes.home); // ✅ uses route helper now
+    navigate(routes.home);
   };
 
   return (
@@ -52,10 +54,22 @@ export default function Header() {
       <div className="flex items-center space-x-4">
         <NavLink to={routes.cart} className="relative">
           <ShoppingCart className="h-6 w-6 text-gray-700 hover:text-green-600" />
-          <span className="absolute -top-1 -right-2 text-xs bg-green-600 text-white rounded-full px-1">
-            0
-          </span>
+          {cartCount > 0 && (
+            <span className="absolute -top-1 -right-2 text-xs bg-green-600 text-white rounded-full px-1">
+              {cartCount}
+            </span>
+          )}
         </NavLink>
+
+        {user && (
+          <NavLink to={`/user/${user.id}`}>
+            <img
+              src={user.profileImage || "/placeholder.png"}
+              alt="Profile"
+              className="w-8 h-8 rounded-full object-cover border border-gray-300 hover:ring-2 hover:ring-green-500"
+            />
+          </NavLink>
+        )}
 
         {user ? (
           <button

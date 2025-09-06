@@ -74,11 +74,14 @@ model Favorite {
 }
 
 model Order {
-  orderNumber  Int      @id @default(autoincrement())
-  customerID   String   @db.Uuid
-  address      String
-  totalPrice   Float
-  purchaseTime DateTime @default(now())
+  orderNumber   Int      @id @default(autoincrement())
+  customerID    String   @db.Uuid
+  fullName      String
+  address       String
+  totalPrice    Float
+  purchaseTime  DateTime @default(now())
+  paymentStatus String   @default("pending") // e.g. "pending", "paid", "failed"
+  transactionID String? // from Stripe/PayPal later
 
   customer   User        @relation("CustomerOrders", fields: [customerID], references: [id])
   orderItems OrderItem[]
@@ -100,30 +103,51 @@ model OrderItem {
 }
 
 model Comment {
+  id        Int      @id @default(autoincrement())
   userID    String   @db.Uuid
   productID Int
   content   String
   postTime  DateTime @default(now())
+  rating    Int? // ⭐ rating 1–5 (nullable for backwards compatibility)
 
   user    User    @relation(fields: [userID], references: [id])
   product Product @relation(fields: [productID], references: [productID])
 
-  @@id([userID, productID])
   @@map("comment")
 }
 
+enum ProductType {
+  TOWERS  @map("towers")
+  MODULES @map("modules")
+  ADDONS  @map("addons")
+}
+
+enum ModelFileType {
+  STL
+  OBJ
+  THREE_MF @map("3MF")
+  STEP
+}
+
 model Product {
-  productID   Int      @id @default(autoincrement())
-  productType String
-  name        String   @unique
-  creatorID   String   @db.Uuid
+  productID   Int         @id @default(autoincrement())
+  productType ProductType
+  name        String      @unique
+  creatorID   String      @db.Uuid
   price       Float
   public      Boolean
-  createTime  DateTime @default(now())
-  updateTime  DateTime @updatedAt
+  createTime  DateTime    @default(now())
+  updateTime  DateTime    @updatedAt
   description String?
   PIN         String?
   imageURL    String?
+
+  // 3D model file import
+  modelURL        String?
+  modelFileType   ModelFileType?
+  modelSizeBytes  Int?
+  modelFilename   String?
+  modelPreviewURL String?
 
   creator    User        @relation("CreatorProducts", fields: [creatorID], references: [id])
   orderItems OrderItem[]
@@ -133,6 +157,8 @@ model Product {
 
   towersAsPart  TowerComponent[] @relation("Part")
   towersAsTower TowerComponent[] @relation("Tower")
+
+  config ProductConfig?
 
   @@map("product")
 }
@@ -148,4 +174,15 @@ model TowerComponent {
 
   @@id([towerID, partID])
   @@map("towercomponent")
+}
+
+model ProductConfig {
+  id        Int    @id @default(autoincrement())
+  productID Int    @unique
+  template  String // e.g. "tower_basic"
+  params    Json // Example: { height: 120, sites: 24, led_rings: 2 }
+
+  product Product @relation(fields: [productID], references: [productID])
+
+  @@map("product_config")
 }

@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
 import ProductCard from "../components/ProductCard";
 import ShopFilter from "../components/ShopFilter";
 import ShopSort from "../components/ShopSort";
@@ -7,13 +9,17 @@ import type { Product, ProductType } from "../../../shared/types/product";
 type Mode = "all" | ProductType;
 
 export default function Shop() {
+  const { user } = useAuth();
+  const { cartItems } = useCart();
   const [mode, setMode] = useState<Mode>("all");
   const [sort, setSort] = useState<"new" | "price">("new");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [favoritedIds, setFavoritedIds] = useState<Set<number>>(new Set());
 
+  // ✅ Fetch products
   useEffect(() => {
     (async () => {
       try {
@@ -22,7 +28,7 @@ export default function Shop() {
           `${import.meta.env.VITE_API_URL}/api/products?sort=${sort}&order=${order}`
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const data: Product[] = await res.json();
         setProducts(data);
       } catch (err) {
         console.error("❌ Failed to fetch products:", err);
@@ -33,13 +39,38 @@ export default function Shop() {
     })();
   }, [sort, order]);
 
-  const filtered = mode === "all"
-    ? products
-    : products.filter((p) => p.productType === mode);
+  // ✅ Bulk fetch favorited product IDs
+  useEffect(() => {
+    if (!user) {
+      setFavoritedIds(new Set());
+      return;
+    }
+
+    const fetchFavorites = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/favorites/${user.id}/ids`
+        );
+        if (!res.ok) throw new Error("Failed to fetch favorite IDs");
+        const ids: number[] = await res.json();
+        setFavoritedIds(new Set(ids));
+      } catch (err) {
+        console.error("❌ Error loading favorite IDs:", err);
+      }
+    };
+
+    fetchFavorites();
+  }, [user]);
+
+  // ✅ Apply filter client-side
+  const filtered = useMemo(() => {
+    return mode === "all"
+      ? products
+      : products.filter((p) => p.productType === mode);
+  }, [products, mode]);
 
   return (
     <div className="p-6 space-y-6">
-      {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold">Shop Products</h1>
         <p className="mt-2 text-gray-600 dark:text-gray-300">
@@ -47,16 +78,18 @@ export default function Shop() {
         </p>
       </div>
 
-      {/* Filter + Sort */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <ShopFilter mode={mode} onChange={setMode} />
-        <ShopSort sort={sort} order={order} onChange={(s, o) => {
-          setSort(s);
-          setOrder(o);
-        }} />
+        <ShopSort
+          sort={sort}
+          order={order}
+          onChange={(s, o) => {
+            setSort(s);
+            setOrder(o);
+          }}
+        />
       </div>
 
-      {/* Results */}
       {loading ? (
         <div className="text-center py-10 text-gray-500 dark:text-gray-400">
           Loading products...
@@ -66,7 +99,11 @@ export default function Shop() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {filtered.map((p) => (
-            <ProductCard key={p.id} {...p} />
+            <ProductCard
+              key={p.productID}
+              {...p}
+              isFavorited={favoritedIds.has(p.productID)}
+            />
           ))}
         </div>
       )}
