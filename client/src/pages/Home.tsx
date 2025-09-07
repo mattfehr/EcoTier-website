@@ -5,6 +5,14 @@ import CompanyFeatures from "../components/CompanyFeatures";
 import AeroponicInfo from "../components/AeroponicInfo";
 import AeroponicDiagram from "../assets/aeroponicsdiagram.jpg";
 import Aeroponics from "../assets/aeroponics.jpg";
+import TeamSection from "../components/TeamSection";
+import Matthew from "../assets/matthew.png";
+import Grace from "../assets/grace.jpg";
+import Loc from "../assets/loc.png";
+import Joshua from "../assets/joshuajpg.jpg";
+import Jared from "../assets/jared.jpg";
+import Gaby from "../assets/gaby.png";
+import Reese from "../assets/reese.jpg";
 
 type Product = {
   productID: number;
@@ -12,6 +20,58 @@ type Product = {
   price: number;
   imageURL?: string;
 };
+
+const teamMembers = [
+  {
+    name: "Matthew Fehr",
+    role: "Software Engineer",
+    description:
+      "I attend California State University, Long Beach as a Computer Science major focusing on machine learning and AI. I aspire to be a software engineer, machine learning engineer, data scientist or anything along those lines. I will be focusing on the software such as a tool for customization or an app for controls and monitoring.",
+    image: Matthew, 
+  },
+  {
+    name: "Grace Li",
+    role: "Software Engineer",
+    description:
+      "I am a third year Computer Science major at San Jose State University with interest in machine learning, computer vision, and software development. In this project, I will focus on helping with the software part.",
+    image: Grace, 
+  },
+  {
+    name: "Loc Nguyen",
+    role: "Mechanical Engineer",
+    description:
+      "I’m a fourth year Mechanical Engineering major at San Diego State University with a strong interest in working with military aircraft or robotics. In this project, I’m contributing to the development of a solution and assisting the team in building a prototype.",
+    image: Loc, 
+  },
+  {
+    name: "Joshua Gordian",
+    role: "Electrical Engineer",
+    description:
+      "I recently graduated from Santa Ana College and will transfer to Cal Poly Pomona this fall as an Electrical Engineering major. Led the conduction of background research needed for the project and accumulated the various sources to support the proposal. I will also be focusing on helping with the technical design of the project.",
+    image: Joshua,
+  },
+  {
+    name: "Jared Redoblado",
+    role: "Marketing & Data Analyst",
+    description:
+      "I am a Marketing major attending Cal State Fullerton, but I aspire to be a Marketing Data Analyst. I want to be able to analyze market trends within various industries and provide knowledge of consumer actions towards their purchases to these industries. Within this project, I helped research who our target consumer market is for our proposal, and researched the total addressable and serviceable market of our product with the help of my colleagues.",
+    image: Jared,
+  },
+  {
+    name: "Gabriela Quintana",
+    role: "Informatics Specialist",
+    description:
+      "I am a fourth year Informatics major at UC Irvine, specializing in organizations and information technology. I plan to be a user interface/experience developer, or front end software developer. My contribution to the team includes taking a part in the solution development process, as well as researching sustainability and product impact.",
+    image: Gaby,
+  },
+  {
+    name: "Reese Catron",
+    role: "Civil Engineer",
+    description:
+      "I am a third year civil engineering major at San Diego State University and plan to become a structural engineer. For this project, I designed the team name and logo and researched the impact of our product.",
+    image: Reese,
+  },
+];
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -79,6 +139,11 @@ export default function Home() {
       <div>
         <AeroponicInfo section={infos} />
       </div>
+
+      <div>
+        <TeamSection members={teamMembers} />
+      </div>
+
     </div>
   );
 }
