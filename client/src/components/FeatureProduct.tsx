@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { useNavigate } from "react-router-dom";
 
-// Product type
 type Product = {
   productID: number;
   name: string;
@@ -24,17 +24,16 @@ const FeatureProduct: React.FC<Props> = ({ products, loading }) => {
   const [progress, setProgress] = useState<number>(0);
   const progressRef = useRef<HTMLDivElement>(null);
   const hasData = useMemo(() => Boolean(products.length), [products]);
+  const navigate = useNavigate();
 
   const duration = 4900;
 
   useEffect(() => {
     if (!products.length) return;
-
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % products.length);
       setProgress(10);
     }, duration);
-
     return () => clearInterval(interval);
   }, [products, duration]);
 
@@ -43,11 +42,9 @@ const FeatureProduct: React.FC<Props> = ({ products, loading }) => {
       setProgress((prevProgress) => {
         const nextProgress = prevProgress + 100 / (duration / 100);
         if (nextProgress >= 100) clearInterval(progressInterval);
-
         return nextProgress;
       });
     }, 100);
-
     return () => clearInterval(progressInterval);
   }, [currentIndex, duration]);
 
@@ -67,34 +64,48 @@ const FeatureProduct: React.FC<Props> = ({ products, loading }) => {
           <div className="relative w-full h-full">
             {!hasData && <div>default image...</div>}
             {hasData &&
-              products.map((item, index) => (
-                <div
-                  key={item.productID}
-                  className={cn(
-                    `flex flex-col w-full h-full absolute transition-opacity duration-1000 cursor-pointer`,
-                    index === currentIndex ? "opacity-100" : "opacity-0"
-                  )}
-                >
-                  <div className="w-full h-[340px] group-hover:scale-110 transition-all duration-300 ease-in-out">
-                    <div
-                      style={{
-                        backgroundImage: `url('${
-                          item.imageURL || "https://via.placeholder.com/1500x600"
-                        }')`,
-                        backgroundSize: "cover",
-                        backgroundRepeat: "no-repeat",
-                        backgroundPosition: "center",
-                        width: "100%",
-                        height: "100%",
-                      }}
-                    />
+              products.map((item, index) => {
+                const isActive = index === currentIndex;
+                return (
+                  <div
+                    key={item.productID}
+                    role="button"
+                    tabIndex={0}
+                    aria-hidden={!isActive}
+                    onClick={() => isActive && navigate(`/product/${item.productID}`)}
+                    onKeyDown={(e) => {
+                      if (isActive && (e.key === "Enter" || e.key === " ")) {
+                        navigate(`/product/${item.productID}`);
+                      }
+                    }}
+                    className={cn(
+                      "flex flex-col w-full h-full absolute transition-opacity duration-1000 cursor-pointer",
+                      isActive
+                        ? "opacity-100 pointer-events-auto z-10"
+                        : "opacity-0 pointer-events-none z-0"
+                    )}
+                  >
+                    <div className="w-full h-[340px] group-hover:scale-110 transition-all duration-300 ease-in-out">
+                      <div
+                        style={{
+                          backgroundImage: `url('${
+                            item.imageURL || "https://via.placeholder.com/1500x600"
+                          }')`,
+                          backgroundSize: "cover",
+                          backgroundRepeat: "no-repeat",
+                          backgroundPosition: "center",
+                          width: "100%",
+                          height: "100%",
+                        }}
+                      />
+                    </div>
+                    <div className="absolute bottom-4 left-4 bg-black/60 text-white px-3 py-1 rounded">
+                      <span className="font-semibold">{item.name}</span> – $
+                      {item.price.toFixed(2)}
+                    </div>
                   </div>
-                  <div className="absolute bottom-4 left-4 bg-black/60 text-white px-3 py-1 rounded">
-                    <span className="font-semibold">{item.name}</span> – $
-                    {item.price.toFixed(2)}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
           </div>
 
           {hasData && (
