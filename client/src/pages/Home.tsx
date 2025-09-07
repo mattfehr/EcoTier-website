@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import FeatureProduct from "../components/FeatureProduct";
 import CompanyFeatures from "../components/CompanyFeatures";
 import AeroponicInfo from "../components/AeroponicInfo";
+import AeroponicDiagram from "../assets/aeroponicsdiagram.jpg";
+import Aeroponics from "../assets/aeroponics.jpg";
 
 type Product = {
   productID: number;
@@ -18,24 +20,25 @@ export default function Home() {
   const featuresData = [
     {
       title: "Varied Plants",
-      description: "Longer definition on the company features",
+      description: "Grow leafy greens, herbs, and even fruits with a single system.",
     },
     {
-      title: "Customization feature",
-      description: "Longer definition on the company features",
+      title: "Customization",
+      description: "Mix towers, modules, and add-ons to design your perfect setup.",
     },
     {
       title: "Affordable price",
-      description: "Longer definition on the company features",
+      description: "Eco-friendly food production at a fraction of the cost.",
     },
   ];
 
   const infos = {
-    title: "About Aeroponic",
-    description: "A brief intro to the aeroponic",
+    title: "About Aeroponic Vertical Farming",
+    description:
+      "Aeroponics is a method of growing plants without soil, where roots are suspended in the air and misted with a nutrient-rich solution. This technique uses up to 90% less water than traditional farming, speeds up plant growth, and allows for dense, vertical systems that are perfect for urban or indoor environments.",
     imageUrls: [
-      "https://picsum.photos/1000/600",
-      "https://picsum.photos/1000/600",
+      AeroponicDiagram,
+      Aeroponics,
     ],
   };
 
@@ -72,23 +75,10 @@ export default function Home() {
       <div>
         <CompanyFeatures features={featuresData} />
       </div>
+
       <div>
         <AeroponicInfo section={infos} />
       </div>
-
-      <ul className="space-y-2">
-        {products.map((p) => (
-          <li
-            key={p.productID}
-            className="border p-3 rounded shadow-sm flex justify-between"
-          >
-            <span>{p.name}</span>
-            <span className="font-semibold text-green-600">
-              ${p.price.toFixed(2)}
-            </span>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
