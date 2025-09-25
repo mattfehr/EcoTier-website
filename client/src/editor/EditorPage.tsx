@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { routes } from "../utils/routes";
 import type { Product, ProductType } from "../../../shared/types/product";
@@ -6,7 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 import { slugify } from "../utils/slugify";
 import ModelUploader from "../components/ModelUploader";
-import ModelViewer from "../components/ModelViewer";
+import ModelViewer, { type ModelViewerHandle } from "../components/ModelViewer";
 
 function fileNameFromUrl(url?: string) {
   if (!url) return "";
@@ -19,13 +19,13 @@ function fileNameFromUrl(url?: string) {
   }
 }
 
-
 export default function EditorPage() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   const isNew = !id || id === "new";
 
   const { user } = useAuth();
+  const modelViewerRef = useRef<ModelViewerHandle>(null);
 
   const [form, setForm] = useState<{
     name?: string;
@@ -49,15 +49,13 @@ export default function EditorPage() {
 
   const [loading, setLoading] = useState(!isNew);
 
-  // 🔹 Refactor: shared product fetcher
+  // --- Fetch product for editing ---
   const fetchProduct = async () => {
     if (isNew || !id) return;
     try {
       setLoading(true);
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/products/${id}?userID=${
-          user?.id ?? ""
-        }`
+        `${import.meta.env.VITE_API_URL}/api/products/${id}?userID=${user?.id ?? ""}`
       );
       if (!res.ok) throw new Error("Failed to load product");
       const p: Product = await res.json();
@@ -81,14 +79,13 @@ export default function EditorPage() {
     }
   };
 
-  // Load existing product if editing
   useEffect(() => {
     if (!isNew) fetchProduct();
   }, [id, isNew, user?.id]);
 
-  // Upload helper for images
+  // --- Upload image helper ---
   const uploadImage = async (file: File) => {
-    if (!user) return;
+    if (!user) return undefined;
 
     const path = `${user.id}/images/${Date.now()}-${slugify(file.name)}`;
     const { error } = await supabase.storage.from("images").upload(path, file);
@@ -96,19 +93,36 @@ export default function EditorPage() {
 
     const { data: pub } = supabase.storage.from("images").getPublicUrl(path);
     setForm((f) => ({ ...f, imageURL: pub?.publicUrl }));
+    return pub?.publicUrl;
   };
 
-  // --- Save ---
+  // --- Ensure we have an image (fallback = screenshot) ---
+  const ensureImage = async (): Promise<string | undefined> => {
+    if (form.imageURL) return form.imageURL;
+
+    if (modelViewerRef.current) {
+      const screenshot = modelViewerRef.current.getScreenshot();
+      if (screenshot) {
+        const blob = await (await fetch(screenshot)).blob();
+        const file = new File([blob], "model-preview.png", { type: "image/png" });
+        return await uploadImage(file);
+      }
+    }
+    return undefined;
+  };
+
+  // --- Save new product ---
   const saveNew = async () => {
     if (!user) {
       alert("You must be logged in to create a product.");
       return;
     }
     try {
+      const finalImage = await ensureImage();
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, userID: user.id }),
+        body: JSON.stringify({ ...form, userID: user.id, imageURL: finalImage }),
       });
       if (!res.ok) throw new Error("Create failed");
       const created: Product = await res.json();
@@ -119,20 +133,19 @@ export default function EditorPage() {
     }
   };
 
+  // --- Save existing product ---
   const saveExisting = async () => {
     if (!user) {
       alert("You must be logged in to save.");
       return;
     }
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/products/${id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...form, userID: user.id }),
-        }
-      );
+      const finalImage = await ensureImage();
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, userID: user.id, imageURL: finalImage }),
+      });
       if (!res.ok) throw new Error("Update failed");
       alert("Saved!");
     } catch (e) {
@@ -170,10 +183,7 @@ export default function EditorPage() {
         onChange={(e) =>
           setForm({
             ...form,
-            price:
-              e.target.value === ""
-                ? undefined
-                : parseFloat(e.target.value),
+            price: e.target.value === "" ? undefined : parseFloat(e.target.value),
           })
         }
       />
@@ -182,9 +192,7 @@ export default function EditorPage() {
       <select
         className="w-full border p-2 rounded"
         value={form.productType ?? "modules"}
-        onChange={(e) =>
-          setForm({ ...form, productType: e.target.value as ProductType })
-        }
+        onChange={(e) => setForm({ ...form, productType: e.target.value as ProductType })}
       >
         <option value="towers">towers</option>
         <option value="modules">modules</option>
@@ -212,14 +220,12 @@ export default function EditorPage() {
       {/* Image Upload */}
       <div>
         <label className="block font-medium mb-1">Product Image</label>
-
-        {/* Hidden input + styled label as the button */}
         <input
           id="product-image-input"
           type="file"
           accept="image/*"
           onChange={(e) => e.target.files && uploadImage(e.target.files[0])}
-          className="sr-only"  // hide the native control
+          className="sr-only"
         />
         <label
           htmlFor="product-image-input"
@@ -228,11 +234,13 @@ export default function EditorPage() {
           Choose Image
         </label>
 
-        {/* Our own status instead of native “No file chosen” */}
         {form.imageURL ? (
           <div className="mt-2">
             <p className="text-sm text-gray-700">
-              Image attached{fileNameFromUrl(form.imageURL) ? `: ${fileNameFromUrl(form.imageURL)}` : ""}
+              Image attached
+              {fileNameFromUrl(form.imageURL)
+                ? `: ${fileNameFromUrl(form.imageURL)}`
+                : ""}
             </p>
             <img
               src={form.imageURL}
@@ -262,6 +270,7 @@ export default function EditorPage() {
           {form.modelURL && form.modelFileType && (
             <div className="mt-4">
               <ModelViewer
+                ref={modelViewerRef}
                 url={form.modelURL}
                 fileType={form.modelFileType as "STL" | "OBJ" | "3MF" | "STEP"}
                 height={400}
