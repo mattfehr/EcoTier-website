@@ -5,14 +5,13 @@
     "moduleResolution": "node",
     "lib": ["esnext"],
     "esModuleInterop": true,
-    "rootDir": "../",                  // allow server + shared
-    "outDir": "./dist",
+    "outDir": "dist",
     "strict": true,
     "skipLibCheck": true,
     "sourceMap": true,
-    "baseUrl": ".",                    // optional, helps with path aliases later
+    "baseUrl": ".",
     "paths": {
-      "@shared/*": ["../shared/*"]     // optional alias for imports
+      "@shared/*": ["../shared/*"]
     }
   },
   "include": ["src", "../shared"],
