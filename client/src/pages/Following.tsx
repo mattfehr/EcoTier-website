@@ -31,6 +31,14 @@ export default function Following() {
     fetchFollowing();
   }, [currentUser]);
 
+  if (!currentUser && !authLoading) {
+    return (
+      <div className="p-6 text-center text-gray-700 dark:text-gray-300">
+        Please log in to view who you follow.
+      </div>
+    );
+  }
+
   if (authLoading || loading) {
     return <div className="p-6 text-gray-500">Loading...</div>;
   }

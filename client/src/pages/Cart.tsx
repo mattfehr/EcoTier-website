@@ -1,11 +1,10 @@
-// src/pages/Cart.tsx
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import CartProductCard from "../components/CartProductCard";
 
 export default function Cart() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { cartItems, refreshCart } = useCart();
   const [fullName, setFullName] = useState("");
   const [address, setAddress] = useState("");
@@ -44,6 +43,14 @@ export default function Cart() {
       setPlacing(false);
     }
   };
+
+  if (!user && !authLoading) {
+    return (
+      <div className="p-6 text-center text-gray-700 dark:text-gray-300">
+        Please log in to view your cart.
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">
