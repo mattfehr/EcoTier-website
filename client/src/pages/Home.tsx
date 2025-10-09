@@ -8,7 +8,7 @@ import Aeroponics from "../assets/aeroponics.jpg";
 import TeamSection from "../components/TeamSection";
 import Matthew from "../assets/matthew.png";
 import Grace from "../assets/grace.jpg";
-import Loc from "../assets/loc.png";
+import Loc from "../assets/loc2.png";
 import Joshua from "../assets/joshuajpg.jpg";
 import Jared from "../assets/jared.jpg";
 import Gaby from "../assets/gaby.png";
