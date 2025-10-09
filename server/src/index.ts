@@ -18,7 +18,8 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",       // Local Vite dev server
-      "https://ecotier.vercel.app",  // Production frontend on Vercel
+      "https://eco-tier-website-ix3l.vercel.app",        // Your Vercel deployment
+      "https://ecotier.vercel.app",                      // (optional older URL)
     ],
     credentials: true,
   })
